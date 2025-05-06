@@ -3,8 +3,8 @@ import { BarChart, XAxis, YAxis, Tooltip, Legend, Bar, ResponsiveContainer } fro
 
 export function SlaBarChart({ data }: { data: any[] }) {
   const grouped = data.reduce((acc, r) => {
-    const p = r.Projeto;
-    acc[p] = acc[p] || { Projeto:p, Atingido:0, Violado:0 };
+    const p = r.Projeto as string;
+    acc[p] = acc[p] || { Projeto: p, Atingido: 0, Violado: 0 };
     r.CumpriuSLA_Res ? acc[p].Atingido++ : acc[p].Violado++;
     return acc;
   }, {} as Record<string, any>);

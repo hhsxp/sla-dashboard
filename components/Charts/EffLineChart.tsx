@@ -1,24 +1,23 @@
 import React from 'react';
-import { BarChart, XAxis, YAxis, Tooltip, Legend, Bar, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-export function SlaBarChart({ data }: { data: any[] }) {
+export function EffLineChart({ data }: { data: any[] }) {
   const grouped = data.reduce((acc, r) => {
-    const p = r.Projeto;
-    acc[p] = acc[p] || { Projeto:p, Atingido:0, Violado:0 };
-    r.CumpriuSLA_Res ? acc[p].Atingido++ : acc[p].Violado++;
+    const m = r.Mes_Ano;
+    acc[m] = acc[m] || { Mes_Ano: m, Ef: 0, count: 0 };
+    acc[m].Ef += (r.HorasApontadas||0) / (r.HorasContratadas||1);
+    acc[m].count++;
     return acc;
   }, {} as Record<string, any>);
-  const chartData = Object.values(grouped);
+  const chartData = Object.values(grouped).map(item => ({ Mes_Ano: item.Mes_Ano, Ef: item.Ef/item.count }));
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData}>
-        <XAxis dataKey="Projeto" />
+      <LineChart data={chartData}>
+        <XAxis dataKey="Mes_Ano" />
         <YAxis />
         <Tooltip />
-        <Legend />
-        <Bar dataKey="Atingido" fill="#28a745" />
-        <Bar dataKey="Violado" fill="#dc3545" />
-      </BarChart>
+        <Line type="monotone" dataKey="Ef" stroke="#20c997" />
+      </LineChart>
     </ResponsiveContainer>
   );
 }

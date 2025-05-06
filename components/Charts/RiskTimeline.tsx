@@ -1,24 +1,21 @@
 import React from 'react';
-import { BarChart, XAxis, YAxis, Tooltip, Legend, Bar, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-export function SlaBarChart({ data }: { data: any[] }) {
+export function RiskTimeline({ data }: { data: any[] }) {
   const grouped = data.reduce((acc, r) => {
-    const p = r.Projeto;
-    acc[p] = acc[p] || { Projeto:p, Atingido:0, Violado:0 };
-    r.CumpriuSLA_Res ? acc[p].Atingido++ : acc[p].Violado++;
+    const d = r.Criado.split('T')[0];
+    if (!r.CumpriuSLA_Res) { acc[d] = (acc[d]||0) + 1; }
     return acc;
-  }, {} as Record<string, any>);
-  const chartData = Object.values(grouped);
+  }, {} as Record<string, number>);
+  const chartData = Object.entries(grouped).map(([date,value]) => ({ date, Viol: value }));
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData}>
-        <XAxis dataKey="Projeto" />
+      <LineChart data={chartData}>
+        <XAxis dataKey="date" />
         <YAxis />
         <Tooltip />
-        <Legend />
-        <Bar dataKey="Atingido" fill="#28a745" />
-        <Bar dataKey="Violado" fill="#dc3545" />
-      </BarChart>
+        <Line type="monotone" dataKey="Viol" stroke="#dc3545" />
+      </LineChart>
     </ResponsiveContainer>
   );
 }

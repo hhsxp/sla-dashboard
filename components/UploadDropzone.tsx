@@ -8,39 +8,40 @@ export function UploadDropzone() {
   const router = useRouter();
   const onDrop = async (files: File[]) => {
     const buf = await files[0].arrayBuffer();
-    const wb = XLSX.read(buf, { type:'array' });
+    const wb = XLSX.read(buf, { type: 'array' });
     const sheet = wb.Sheets['Tickets'];
     if (!sheet) return alert('Aba Tickets não encontrada');
-    const json = XLSX.utils.sheet_to_json(sheet, { raw:false });
-
-    // Processa métricas em JS:
+    const json = XLSX.utils.sheet_to_json(sheet, { raw: false });
     const now = new Date();
-    const prioMap: Record<string, number> = { Highest:4, High:6, Medium:12, Low:24, Lowest:40 };
+    const prioMap: Record<string, number> = { Highest: 4, High: 6, Medium: 12, Low: 24, Lowest: 40 };
     const data = (json as any[]).map(r => {
       const criado = new Date(r.Criado);
-      const tdRes = r['Tempo de resolução'].split(':').map(Number);
-      const horasRes = tdRes[0] + tdRes[1]/60;
-      const slaH = prioMap[r.Prioridade]||0;
+      const [h, m] = (r['Tempo de resolução'] || '0:00').split(':').map(Number);
+      const horasRes = h + m/60;
+      const slaH = prioMap[r.Prioridade] || 0;
       return {
         ...r,
         Criado: criado,
         HorasResolução: horasRes,
         SLA_Horas: slaH,
         CumpriuSLA_Res: horasRes <= slaH,
-        Aging_Horas: (now.getTime()-criado.getTime())/3600000,
+        Aging_Horas: (now.getTime() - criado.getTime())/3600000,
         Mes_Ano: criado.toISOString().slice(0,7)
       };
     });
-
     const id = await addVersion(data);
     router.push(`/?version=${id}`);
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept:'.xlsx' });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: '.xlsx' });
+
   return (
-    <div {...getRootProps()} className="border-2 border-dashed p-8 text-center">
+    <div
+      {...getRootProps()}
+      className="border-2 border-dashed border-gray-600 p-8 text-center text-gray-400"
+    >
       <input {...getInputProps()} />
-      {isDragActive ? 'Solte o SLA.xlsx aqui…' : 'Arraste ou clique para enviar o SLA.xlsx'}
+      {isDragActive ? 'Solte o arquivo aqui…' : 'Arraste ou clique para enviar o SLA.xlsx'}
     </div>
   );
 }

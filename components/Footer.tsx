@@ -1,5 +1,5 @@
 import React from 'react';
-import { useReactTable, ColumnDef, getCoreRowModel } from '@tanstack/react-table';
+import { useReactTable, ColumnDef, getCoreRowModel, flexRender } from '@tanstack/react-table';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 
@@ -9,14 +9,9 @@ export function Footer({ data }: FooterProps) {
   const columns: ColumnDef<any>[] = Object.keys(data[0] || {}).map(key => ({
     accessorKey: key,
     header: key,
+    cell: info => info.getValue(),
   }));
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
+  const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
   const exportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -24,7 +19,6 @@ export function Footer({ data }: FooterProps) {
     const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     saveAs(new Blob([buf]), 'dashboard_export.xlsx');
   };
-
   return (
     <div className="mt-6">
       <div className="overflow-x-auto">
@@ -34,7 +28,7 @@ export function Footer({ data }: FooterProps) {
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
                   <th key={header.id} className="px-4 py-2">
-                    {header.isPlaceholder ? null : header.column.columnDef.header}
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
                 ))}
               </tr>
@@ -45,7 +39,7 @@ export function Footer({ data }: FooterProps) {
               <tr key={row.id} className="hover:bg-gray-700">
                 {row.getVisibleCells().map(cell => (
                   <td key={cell.id} className="px-4 py-2">
-                    {cell.getValue()?.toString()}
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
               </tr>
@@ -60,5 +54,4 @@ export function Footer({ data }: FooterProps) {
         Exportar para Excel
       </button>
     </div>
-);
 }
