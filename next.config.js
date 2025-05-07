@@ -1,6 +1,10 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
   output: 'export',
+  // opcionalmente, se você quiser que o HTML seja gerado
+  // com trailing slash: '/about/' em vez de '/about'
+  // trailingSlash: true,
 };
+
 module.exports = nextConfig;
