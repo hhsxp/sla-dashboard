@@ -1,17 +1,16 @@
 // pages/index.tsx
-import React, { useEffect, useState, ChangeEvent } from 'react'
-import localforage from 'localforage'
-import { useRouter } from 'next/router'
 import Head from 'next/head'
+import { useState, useEffect } from 'react'
+import localforage from 'localforage'
 
 import { Header } from '../components/Header'
-import { TabsNav } from '../components/TabsNav'
 import { UploadDropzone } from '../components/UploadDropzone'
-import { SlaBarChart } from '../components/Charts/SlaBarChart'
-import { TicketsPieChart } from '../components/Charts/TicketsPieChart'
-import { EffLineChart } from '../components/Charts/EffLineChart'
-import { RiskTimeline } from '../components/Charts/RiskTimeline'
-import { Footer } from '../components/Footer'
+import TabsNav from '../components/TabsNav'
+import SlaBarChart from '../components/Charts/SlaBarChart'
+import TicketsPieChart from '../components/Charts/TicketsPieChart'
+import EffLineChart from '../components/Charts/EffLineChart'
+import RiskTimeline from '../components/Charts/RiskTimeline'
+import Footer from '../components/Footer'
 
 const TAB_NAMES = [
   'Visão Geral',
@@ -20,86 +19,74 @@ const TAB_NAMES = [
   'Dados Detalhados',
 ]
 
-export default function HomePage() {
-  const router = useRouter()
-
-  // versões gravadas (keys do localforage: vTIMESTAMP)
+export default function Home() {
+  // lista de versões (chaves em localforage)
   const [versions, setVersions] = useState<string[]>([])
-  // versão atualmente selecionada
-  const [currentVersion, setCurrentVersion] = useState<string>('')
-  // dados totais carregados da versão
-  const [allData, setAllData] = useState<any[]>([])
-  // loading geral
-  const [loading, setLoading] = useState(true)
+  // versão selecionada (null = ainda não fez upload)
+  const [currentVersion, setCurrentVersion] = useState<string | null>(null)
+  // dados brutos carregados da versão
+  const [data, setData] = useState<any[]>([])
   // aba ativa
   const [activeTab, setActiveTab] = useState(0)
-
   // filtros
   const [filterProject, setFilterProject] = useState('Todos')
-  const [filterTribe, setFilterTribe]     = useState('Todas')
-  const [filterPeriod, setFilterPeriod]   = useState('Mês')
+  const [filterTribe, setFilterTribe] = useState('Todas')
+  const [filterPeriod, setFilterPeriod] = useState('Mês')
 
-  // 1) ao montar, lista todas as versões
+  // ao montar, busca todas as versões já salvas
   useEffect(() => {
     localforage.keys().then(keys => {
-      const vers = keys
+      const vs = keys
         .filter(k => /^v\d+$/.test(k))
-        .sort((a,b) => b.localeCompare(a))
-      setVersions(vers)
-      if (vers[0]) {
-        setCurrentVersion(vers[0])
-      } else {
-        setLoading(false)
-      }
+        .sort()
+        .reverse()
+      setVersions(vs)
     })
   }, [])
 
-  // 2) toda vez que currentVersion muda, carrega os dados
-  useEffect(() => {
-    if (!currentVersion) return
-    setLoading(true)
-    localforage
-      .getItem<any[]>(currentVersion)
-      .then(data => setAllData(data || []))
-      .finally(() => setLoading(false))
-  }, [currentVersion])
-
-  // 3) fallback: se não tiver NENHUMA versão, mostra upload full-screen
-  if (!loading && versions.length === 0) {
+  // se ainda não escolheu versão, mostra apenas o upload
+  if (!currentVersion) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <h1 className="text-white text-2xl mb-6 text-center">
-            Carregue sua planilha SLA
-          </h1>
-          <UploadDropzone onComplete={(newKey) => {
-            // imediatamente seta e adiciona essa nova versão
-            setVersions(v => [newKey, ...v])
-            setCurrentVersion(newKey)
-          }} />
-        </div>
+      <div className="min-h-screen bg-black p-8 text-white flex flex-col items-center justify-center">
+        <h1 className="text-3xl mb-6">Carregue sua planilha SLA</h1>
+        <UploadDropzone
+          onComplete={async key => {
+            // depois de salvar em localforage, recarrega lista de versões
+            const vs = await localforage.keys().then(keys =>
+              keys.filter(k => /^v\d+$/.test(k)).sort().reverse()
+            )
+            setVersions(vs)
+            // seleciona essa versão
+            setCurrentVersion(key)
+          }}
+        />
       </div>
     )
   }
 
-  // 4) gera listas de valores únicos para filtros
-  const projects = Array.from(new Set(allData.map(d => d.Projeto))).sort()
-  const tribes   = Array.from(new Set(allData.map(d => d.Unidade))).sort()
-  const periods  = ['Mês','Trimestre','Ano']  // exemplo fixo
+  // quando currentVersion muda, busca os dados em localforage
+  useEffect(() => {
+    if (!currentVersion) return
+    localforage.getItem<any[]>(currentVersion).then(arr => {
+      setData(arr || [])
+      // reset de abas/filtros se quiser:
+      setActiveTab(0)
+      setFilterProject('Todos')
+      setFilterTribe('Todas')
+      setFilterPeriod('Mês')
+    })
+  }, [currentVersion])
 
-  // 5) aplica filtros sobre allData
-  const filtered = allData
-    .filter(d => filterProject === 'Todos'  || d.Projeto === filterProject)
-    .filter(d => filterTribe   === 'Todas' || d.Unidade === filterTribe)
-    // para filtro de período você precisará montar lógica de datas aqui
-    // por ora, deixamos tudo
-    .slice()
+  // aplica filtro de projeto, tribo e (futuramente) período
+  const filtered = data
+    .filter(d => filterProject === 'Todos' || d.Projeto === filterProject)
+    .filter(d => filterTribe === 'Todas' || d.Unidade === filterTribe)
+    // aqui você pode filtrar por mês/trimestre/ano, usando d.Criado ou outra data
 
   return (
     <>
       <Head>
-        <title>Dashboard SLA</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>SLA Dashboard</title>
       </Head>
 
       <div className="min-h-screen bg-black text-white flex flex-col">
@@ -110,82 +97,70 @@ export default function HomePage() {
           onSelect={v => setCurrentVersion(v)}
         />
 
-        <main className="flex-1 p-4 space-y-4">
-          {/* Se ainda estiver carregando os dados */}
-          {loading && <p>Carregando dados…</p>}
-          {!loading && (
-            <>
-              {/* Área de filtros */}
-              <div className="flex flex-wrap gap-4 mb-4">
-                <select
-                  className="bg-gray-800 text-white p-2 rounded"
-                  value={filterProject}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                    setFilterProject(e.target.value)
-                  }
-                >
-                  <option>Todos</option>
-                  {projects.map(p => (
-                    <option key={p}>{p}</option>
-                  ))}
-                </select>
+        <main className="p-6 flex-1">
+          {/* LINHA DE FILTROS */}
+          <div className="flex flex-wrap gap-4 mb-6">
+            {/* Projeto */}
+            <select
+              value={filterProject}
+              onChange={e => setFilterProject(e.target.value)}
+              className="bg-gray-800 px-3 py-2 rounded"
+            >
+              <option>Todos</option>
+              {[...new Set(data.map(d => d.Projeto))].map(p => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
 
-                <select
-                  className="bg-gray-800 text-white p-2 rounded"
-                  value={filterTribe}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                    setFilterTribe(e.target.value)
-                  }
-                >
-                  <option>Todas</option>
-                  {tribes.map(t => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
+            {/* Tribo */}
+            <select
+              value={filterTribe}
+              onChange={e => setFilterTribe(e.target.value)}
+              className="bg-gray-800 px-3 py-2 rounded"
+            >
+              <option>Todas</option>
+              {[...new Set(data.map(d => d.Unidade))].map(t => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
 
-                <select
-                  className="bg-gray-800 text-white p-2 rounded"
-                  value={filterPeriod}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                    setFilterPeriod(e.target.value)
-                  }
-                >
-                  {periods.map(p => (
-                    <option key={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
+            {/* Período */}
+            <select
+              value={filterPeriod}
+              onChange={e => setFilterPeriod(e.target.value)}
+              className="bg-gray-800 px-3 py-2 rounded"
+            >
+              <option>Mês</option>
+              <option>Trimestre</option>
+              <option>Ano</option>
+            </select>
+          </div>
 
-              {/* Navegação de abas */}
-              <TabsNav
-                tabs={TAB_NAMES}
-                activeIndex={activeTab}
-                onChange={i => setActiveTab(i)}
-              />
+          {/* Abas */}
+          <TabsNav
+            tabs={TAB_NAMES}
+            selectedIndex={activeTab}
+            onChange={i => setActiveTab(i)}
+          />
 
-              {/* Conteúdo de cada aba */}
-              <div className="mt-4 space-y-8">
-                {activeTab === 0 && (
-                  <>
-                    <SlaBarChart data={filtered} />
-                    <TicketsPieChart data={filtered} />
-                  </>
-                )}
-
-                {activeTab === 1 && (
-                  <EffLineChart data={filtered} period={filterPeriod} />
-                )}
-
-                {activeTab === 2 && (
-                  <RiskTimeline data={filtered} period={filterPeriod} />
-                )}
-
-                {activeTab === 3 && (
-                  <Footer data={filtered} />
-                )}
-              </div>
-            </>
-          )}
+          {/* Conteúdo das Abas */}
+          <div className="mt-6 space-y-8">
+            {activeTab === 0 && (
+              <>
+                <SlaBarChart data={filtered} period={filterPeriod} />
+                <TicketsPieChart data={filtered} period={filterPeriod} />
+              </>
+            )}
+            {activeTab === 1 && (
+              <EffLineChart data={filtered} period={filterPeriod} />
+            )}
+            {activeTab === 2 && (
+              <RiskTimeline data={filtered} period={filterPeriod} />
+            )}
+            {activeTab === 3 && (
+              <Footer data={filtered} />
+            )}
+          </div>
         </main>
       </div>
     </>
