@@ -1,44 +1,43 @@
 // components/Charts/TicketsPieChart.tsx
-import React from 'react'
+import React from 'react';
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
-} from 'recharts'
+  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
 
-const COLORS: Record<string,string> = {
-  Incidente: '#0d6efd',
-  'Bug Legado': '#ffc107',
-  Problema: '#20c997',
-  Bug: '#dc3545',
-  Dúvida: '#28a745',
+interface Props {
+  data: any[];
 }
 
-export interface TicketsPieChartProps {
-  data: Array<{
-    tipo: string
-    count: number
-  }>
-}
+const COLORS = ['#0057e7','#ffa700','#008744','#d62d20','#004d40'];
 
-export default function TicketsPieChart({ data }: TicketsPieChartProps) {
+export default function TicketsPieChart({ data }: Props) {
+  // Conta por Tipo
+  const map: Record<string, number> = {};
+  data.forEach(d => {
+    map[d.Tipo] = (map[d.Tipo] || 0) + 1;
+  });
+  const chartData = Object.entries(map).map(([name, value]) => ({ name, value }));
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <PieChart>
         <Pie
-          data={data}
-          dataKey="count"
-          nameKey="tipo"
+          data={chartData}
+          dataKey="value"
+          nameKey="name"
           cx="50%"
           cy="50%"
+          innerRadius={60}
           outerRadius={100}
           label
         >
-          {data.map((entry, i) => (
-            <Cell key={entry.tipo} fill={COLORS[entry.tipo] || '#888'} />
+          {chartData.map((_, i) => (
+            <Cell key={i} fill={COLORS[i % COLORS.length]} />
           ))}
         </Pie>
         <Tooltip />
-        <Legend />
+        <Legend wrapperStyle={{ color: '#fff' }} />
       </PieChart>
     </ResponsiveContainer>
-  )
+  );
 }
