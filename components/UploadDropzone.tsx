@@ -14,30 +14,29 @@ export function UploadDropzone() {
     const json = XLSX.utils.sheet_to_json(sheet, { raw: false });
     const now = new Date();
     const prioMap: Record<string, number> = { Highest: 4, High: 6, Medium: 12, Low: 24, Lowest: 40 };
-    const data = (json as any[]).map(r => {
-      const criado = new Date(r.Criado);
-      const [h, m] = (r['Tempo de resolução'] || '0:00').split(':').map(Number);
-      const horasRes = h + m/60;
-      const slaH = prioMap[r.Prioridade] || 0;
-      return {
-        ...r,
-        Criado: criado,
-        HorasResolução: horasRes,
-        SLA_Horas: slaH,
-        CumpriuSLA_Res: horasRes <= slaH,
-        Aging_Horas: (now.getTime() - criado.getTime())/3600000,
-        Mes_Ano: criado.toISOString().slice(0,7)
-      };
-    });
+    const data = (json as any[]).map(r => ({
+      ...r,
+      Criado: new Date(r.Criado),
+      HorasResolução: (() => {
+        const [h, m] = (r['Tempo de resolução'] || '0:00').split(':').map(Number);
+        return h + m / 60;
+      })(),
+      SLA_Horas: prioMap[r.Prioridade] || 0,
+      CumpriuSLA_Res: (() => {
+        const [h, m] = (r['Tempo de resolução'] || '0:00').split(':').map(Number);
+        const hrs = h + m / 60;
+        return hrs <= (prioMap[r.Prioridade] || 0);
+      })(),
+      Aging_Horas: (new Date().getTime() - new Date(r['Atualizado(a)']).getTime()) / 3600000,
+      Mes_Ano: new Date(r.Criado).toISOString().slice(0, 7)
+    }));
     const id = await addVersion(data);
     router.push(`/?version=${id}`);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
-    }
+    accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
   });
 
   return (
