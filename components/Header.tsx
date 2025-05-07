@@ -1,28 +1,28 @@
-import React from 'react';
-import { Version } from '../utils/storage';
+// components/Header.tsx
+import React from 'react'
 
 interface HeaderProps {
-  versions: Version[];
-  currentVersion: string;
-  onSelect: (id: string) => void;
+  versions: string[]
+  currentVersion: string
+  onSelect: (version: string) => void
 }
 
 export function Header({ versions, currentVersion, onSelect }: HeaderProps) {
   return (
-    <header className="flex items-center justify-between p-4 bg-gray-900">
-      <h1 className="text-2xl font-bold text-white">Dashboard SLA</h1>
+    <header className="bg-gray-900 p-4 flex items-center justify-between">
+      <div className="text-2xl font-bold text-white">SLA Dashboard</div>
       <select
-        className="bg-gray-800 text-white p-2 rounded"
+        className="bg-gray-800 text-white px-3 py-1 rounded"
         value={currentVersion}
         onChange={e => onSelect(e.target.value)}
       >
-        <option value="">Selecione versão</option>
+        <option value="">Selecione a versão</option>
         {versions.map(v => (
-          <option key={v.id} value={v.id}>
-            {new Date(v.ts).toLocaleString()}
+          <option key={v} value={v}>
+            {v}
           </option>
         ))}
       </select>
     </header>
-  );
+  )
 }
