@@ -7,6 +7,7 @@ import ExcelJS from 'exceljs'
 export const config = {
   api: {
     bodyParser: false,
+
   },
 }
 
