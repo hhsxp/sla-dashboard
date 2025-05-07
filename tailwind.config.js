@@ -1,9 +1,22 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
-    './pages/**/*.{js,ts,jsx,tsx}',
-    './components/**/*.{js,ts,jsx,tsx}'
+    './pages/**/*.tsx',
+    './components/**/*.tsx',
   ],
-  theme: { extend: {} },
+  theme: {
+    extend: {
+      fontFamily: {
+        poppins: ['Poppins','sans-serif'],
+        lora: ['Lora','serif'],
+      },
+      colors: {
+        slaOnTime: '#28a745',
+        slaBreached: '#dc3545',
+        atRisk: '#ffc107',
+      }
+    }
+  },
   plugins: []
 };
