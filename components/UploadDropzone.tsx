@@ -33,7 +33,12 @@ export function UploadDropzone() {
     router.push(`/?version=${id}`);
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: '.xlsx' });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+    }
+  });
 
   return (
     <div
