@@ -17,7 +17,7 @@ export default async function handler(
     return res.status(405).json({ error: 'Método não permitido' })
   }
 
-  // 1) Parse do form-data
+  // parse form-data
   const form = new formidable.IncomingForm()
   const { files } = await new Promise<{ files: formidable.Files }>((resolve, reject) =>
     form.parse(req, (err, _fields, files) =>
@@ -25,11 +25,11 @@ export default async function handler(
     )
   )
 
-  // 2) Carrega o workbook
+  // load workbook
   const workbook = new ExcelJS.Workbook()
   await workbook.xlsx.readFile((files.file as formidable.File).filepath)
 
-  // 3) Parse da aba "Tickets"
+  // parse "Tickets" sheet
   const ticketsSheet = workbook.getWorksheet('Tickets')
   const tickets: Array<{
     Tipo: string
@@ -49,8 +49,8 @@ export default async function handler(
     CumpriuPR: boolean
   }> = []
 
-  ticketsSheet.eachRow((row: ExcelJS.Row, rowNumber: number) => {
-    if (rowNumber === 1) return // pula cabeçalho
+  ticketsSheet.eachRow((row: any, rowNumber: number) => {
+    if (rowNumber === 1) return
     tickets.push({
       Tipo:           String(row.getCell(1).value || ''),
       Chave:          String(row.getCell(2).value || ''),
@@ -60,8 +60,8 @@ export default async function handler(
       Status:         String(row.getCell(6).value || ''),
       Relator:        String(row.getCell(7).value || ''),
       Prioridade:     String(row.getCell(8).value || ''),
-      Atualizado:     (row.getCell(9).value instanceof Date ? (row.getCell(9).value as Date).toISOString() : null),
-      Criado:         (row.getCell(10).value instanceof Date ? (row.getCell(10).value as Date).toISOString() : null),
+      Atualizado:     row.getCell(9).value instanceof Date ? (row.getCell(9).value as Date).toISOString() : null,
+      Criado:         row.getCell(10).value instanceof Date ? (row.getCell(10).value as Date).toISOString() : null,
       Responsavel:    String(row.getCell(11).value || ''),
       Tempo1aResp:    Number(row.getCell(12).value) || 0,
       TempoResolucao: Number(row.getCell(13).value) || 0,
@@ -70,7 +70,7 @@ export default async function handler(
     })
   })
 
-  // 4) Parse da aba "Base"
+  // parse "Base" sheet
   const baseSheet = workbook.getWorksheet('Base')
   const baseData: Array<{
     Chave: string
@@ -80,23 +80,23 @@ export default async function handler(
     Flag_RES: string
   }> = []
 
-  baseSheet.eachRow((row: ExcelJS.Row, rowNumber: number) => {
+  baseSheet.eachRow((row: any, rowNumber: number) => {
     if (rowNumber === 1) return
     baseData.push({
       Chave:    String(row.getCell(2).value || ''),
       Horas_PR: Number(row.getCell(6).value) || 0,
       Flag_PR:  String(row.getCell(7).value || ''),
       Horas_RES: Number(row.getCell(8).value) || 0,
-      Flag_RES:  String(row.getCell(9).value || ''),
+      Flag_RES:  String(row.getCell(9).value) || '',
     })
   })
 
-  // 5) Merge das duas fontes
+  // merge datasets
   const allData = tickets.map(t => ({
     ...t,
     ...(baseData.find(b => b.Chave === t.Chave) || {}),
   }))
 
-  // 6) Retorna o total de registros processados
+  // respond with processed data
   return res.status(200).json({ count: allData.length, data: allData })
 }
