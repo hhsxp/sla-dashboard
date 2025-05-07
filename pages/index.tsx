@@ -1,67 +1,75 @@
 // pages/index.tsx
-import React, { useEffect, useState } from 'react';
-import localforage from 'localforage';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
+import React, { useEffect, useState } from 'react'
+import localforage from 'localforage'
+import { useRouter } from 'next/router'
+import Head from 'next/head'
 
 import { Header } from '../components/Header'
-import { TabsNav }      from '../components/TabsNav';
-import { Footer }       from '../components/Footer';
-import { SlaBarChart }      from '../components/Charts/SlaBarChart';
-import { TicketsPieChart }  from '../components/Charts/TicketsPieChart';
-import { EffLineChart }     from '../components/Charts/EffLineChart';
-import { RiskTimeline }     from '../components/Charts/RiskTimeline';
+import { TabsNav } from '../components/TabsNav'
+import { SlaBarChart } from '../components/Charts/SlaBarChart'
+import { TicketsPieChart } from '../components/Charts/TicketsPieChart'
+import { EffLineChart } from '../components/Charts/EffLineChart'
+import { RiskTimeline } from '../components/Charts/RiskTimeline'
+import { Footer } from '../components/Footer'
 
-export default function HomePage() {
-  const router = useRouter();
-  const { version } = router.query;
+const tabs = ['Visão Geral','Desempenho SLA','Tempos e Status','Dados Detalhados']
 
-  const [versions, setVersions]       = useState<string[]>([]);
-  const [currentVersion, setVersion] = useState<string>('');
-  const [allData, setAllData]        = useState<any[]>([]);
-  const [loading, setLoading]        = useState(true);
+const HomePage: React.FC = () => {
+  const router = useRouter()
+  const queryVersion = typeof router.query.version === 'string' ? router.query.version : ''
 
-  const [projeto, setProjeto] = useState<string>('');
-  const [tribo,   setTribo]   = useState<string>('');
-  const [mes,     setMes]     = useState<string>('');
+  const [versions, setVersions]       = useState<string[]>([])
+  const [currentVersion, setVersion]  = useState<string>(queryVersion || '')
+  const [allData, setAllData]         = useState<any[]>([])
+  const [loading, setLoading]         = useState<boolean>(true)
 
-  const tabs = ['Visão Geral','Desempenho SLA','Tempos e Status','Dados Detalhados'];
-  const [activeTab, setActiveTab] = useState(tabs[0]);
+  const [projeto, setProjeto] = useState<string>('')
+  const [tribo, setTribo]     = useState<string>('')
+  const [mes, setMes]         = useState<string>('') // formato "YYYY-MM"
 
-  // carrega versões
+  const [activeTab, setActiveTab] = useState<string>(tabs[0])
+
+  // 1) Carrega versões disponíveis
   useEffect(() => {
     async function loadVersions() {
-      const keys = await localforage.keys();
-      const vers = keys.filter(k => /^v\d+$/.test(k)).sort().reverse();
-      setVersions(vers);
-      const toLoad = typeof version === 'string' ? version : vers[0];
-      if (toLoad) setVersion(toLoad);
-    }
-    loadVersions();
-  }, [version]);
+      const keys = await localforage.keys()
+      const vers = keys.filter(k => /^v\d+$/.test(k)).sort().reverse()
+      setVersions(vers)
 
-  // carrega dados
+      if (queryVersion && vers.includes(queryVersion)) {
+        setVersion(queryVersion)
+      } else if (vers.length > 0) {
+        setVersion(vers[0])
+        router.replace(`/?version=${vers[0]}`, undefined, { shallow: true })
+      }
+    }
+    loadVersions()
+  }, [queryVersion, router])
+
+  // 2) Carrega dados da versão atual
   useEffect(() => {
-    if (!currentVersion) return;
-    setLoading(true);
+    if (!currentVersion) return
+    setLoading(true)
     localforage.getItem<any[]>(currentVersion)
       .then(data => setAllData(data || []))
-      .finally(() => setLoading(false));
-  }, [currentVersion]);
+      .finally(() => setLoading(false))
+  }, [currentVersion])
 
-  const projetos = Array.from(new Set(allData.map(r => r.Projeto))).filter(Boolean);
-  const tribos   = Array.from(new Set(allData.map(r => r.Tribo))).filter(Boolean);
+  // 3) Gera listas únicas para filtros
+  const projetos = Array.from(new Set(allData.map(r => r.Projeto))).filter(Boolean)
+  const tribos   = Array.from(new Set(allData.map(r => r.Tribo))).filter(Boolean)
 
+  // 4) Aplica filtros
   const filteredData = allData.filter(r => {
-    if (projeto && r.Projeto !== projeto) return false;
-    if (tribo   && r.Tribo   !== tribo)   return false;
+    if (projeto && r.Projeto !== projeto) return false
+    if (tribo   && r.Tribo   !== tribo)   return false
     if (mes) {
-      const dt = new Date(r.Criado);
-      const m  = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-      if (m !== mes) return false;
+      const dt = new Date(r.Criado)
+      const m  = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`
+      if (m !== mes) return false
     }
-    return true;
-  });
+    return true
+  })
 
   return (
     <>
@@ -73,12 +81,13 @@ export default function HomePage() {
         versions={versions}
         currentVersion={currentVersion}
         onSelect={v => {
-          setVersion(v);
-          router.push(`/?version=${v}`, undefined, { shallow: true });
+          setVersion(v)
+          router.push(`/?version=${v}`, undefined, { shallow: true })
         }}
       />
 
       <main className="p-4 space-y-6">
+        {/* Filtros */}
         <div className="flex flex-wrap gap-4">
           <select
             className="bg-gray-800 text-white p-2 rounded"
@@ -106,13 +115,16 @@ export default function HomePage() {
           />
         </div>
 
+        {/* Navegação por abas */}
         <TabsNav
           tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
+          active={activeTab}
+          onSelect={setActiveTab}
         />
 
+        {/* Conteúdo */}
         {loading && <p className="text-white">Carregando dados…</p>}
+
         {!loading && filteredData.length === 0 && (
           <p className="text-white">Nenhum dado encontrado para esta versão/filtro.</p>
         )}
@@ -125,12 +137,20 @@ export default function HomePage() {
                 <TicketsPieChart data={filteredData} />
               </>
             )}
-            {activeTab === 'Desempenho SLA' && <EffLineChart data={filteredData} />}
-            {activeTab === 'Tempos e Status' && <RiskTimeline data={filteredData} />}
-            {activeTab === 'Dados Detalhados' && <Footer data={filteredData} />}
+            {activeTab === 'Desempenho SLA' && (
+              <EffLineChart data={filteredData} />
+            )}
+            {activeTab === 'Tempos e Status' && (
+              <RiskTimeline data={filteredData} />
+            )}
+            {activeTab === 'Dados Detalhados' && (
+              <Footer data={filteredData} />
+            )}
           </div>
         )}
       </main>
     </>
-  );
+  )
 }
+
+export default HomePage
