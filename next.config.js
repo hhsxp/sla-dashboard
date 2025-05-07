@@ -1,7 +1,3 @@
-// next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: 'export',
-}
-
-module.exports = nextConfig
+// next-env.d.ts
+/// <reference types="next" />
+/// <reference types="next/types/global" />
