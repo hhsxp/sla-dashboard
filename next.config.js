@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Faz o Next.js gerar arquivos estáticos iguais ao `next export`
   output: 'export',
-}
+  reactStrictMode: true,
+  swcMinify: true,
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
