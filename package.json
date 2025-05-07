@@ -31,3 +31,8 @@
     "@types/file-saver": "^2.0.5"
   }
 }
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "serve out"
+},
