@@ -32,6 +32,6 @@
 }
 "scripts": {
   "dev": "next dev",
-  "build": "next build",       // sem "&& next export"
+  "build": "next build",       
   "start": "serve out"
 }
