@@ -31,15 +31,10 @@ export function Footer({ data }: FooterProps) {
       <div className="overflow-x-auto">
         <table className="min-w-full bg-gray-800 text-white">
           <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th key={header.id} className="px-4 py-2">
-                    {header.isPlaceholder ? null : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </th>
+            {table.getHeaderGroups().map(hg => (
+              <tr key={hg.id}>
+                {hg.headers.map(h => (
+                  <th key={h.id} className="px-4 py-2">{h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}</th>
                 ))}
               </tr>
             ))}
@@ -48,24 +43,11 @@ export function Footer({ data }: FooterProps) {
             {table.getRowModel().rows.map(row => (
               <tr key={row.id} className="hover:bg-gray-700">
                 {row.getVisibleCells().map(cell => (
-                  <td key={cell.id} className="px-4 py-2">
-                    {flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext()
-                    )}
-                  </td>
+                  <td key={cell.id} className="px-4 py-2">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                 ))}
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-      <button
-        onClick={exportToExcel}
-        className="mt-4 px-4 py-2 bg-green-600 rounded text-white hover:bg-green-500"
-      >
-        Exportar para Excel
-      </button>
-    </div>
-  );
-}
+      </>
+}]
