@@ -1,32 +1,25 @@
-// components/TabsNav.tsx
-import React from 'react'
+import React from 'react';
 
 export interface TabsNavProps {
-  /** Lista de nomes das abas */
-  tabs: string[]
-  /** Índice da aba atualmente selecionada */
-  activeIndex: number
-  /** Callback que recebe o índice da aba clicada */
-  onChange: (index: number) => void
+  tabs: string[];
+  activeIndex: number;
+  onChange: (i: number) => void;
 }
 
 export function TabsNav({ tabs, activeIndex, onChange }: TabsNavProps) {
   return (
     <nav className="flex space-x-4 border-b border-gray-700">
-      {tabs.map((tab, idx) => (
+      {tabs.map((t, i) => (
         <button
-          key={idx}
-          className={`
-            pb-2 px-4 text-sm font-medium
-            ${idx === activeIndex
-              ? 'border-b-2 border-brandYellow text-brandYellow'
-              : 'text-white/70 hover:text-white/100'}
-          `}
-          onClick={() => onChange(idx)}
+          key={i}
+          className={`px-4 py-2 ${
+            i === activeIndex ? 'border-b-2 border-blue-500' : 'text-gray-400'
+          }`}
+          onClick={() => onChange(i)}
         >
-          {tab}
+          {t}
         </button>
       ))}
     </nav>
-  )
+  );
 }
