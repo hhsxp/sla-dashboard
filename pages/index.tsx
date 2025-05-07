@@ -4,7 +4,7 @@ import localforage from 'localforage';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 
-import { Header }       from '../components/Header';
+import { Header } from '../components/Header'
 import { TabsNav }      from '../components/TabsNav';
 import { Footer }       from '../components/Footer';
 import { SlaBarChart }      from '../components/Charts/SlaBarChart';
