@@ -20,20 +20,16 @@ const TAB_NAMES = [
 ]
 
 export default function Home() {
-  // versões gravadas em localforage
   const [versions, setVersions] = useState<string[]>([])
-  // versão selecionada ou null antes do upload
   const [currentVersion, setCurrentVersion] = useState<string | null>(null)
-  // dados completos da versão
   const [data, setData] = useState<any[]>([])
-  // aba ativa
   const [activeTab, setActiveTab] = useState<number>(0)
-  // filtros
+
   const [filterProject, setFilterProject] = useState<string>('Todos')
   const [filterTribe, setFilterTribe] = useState<string>('Todas')
   const [filterPeriod, setFilterPeriod] = useState<string>('Mês')
 
-  // carrega lista de versões ao montar
+  // 1) carrega todas as chaves de versão
   useEffect(() => {
     localforage.keys().then(keys => {
       const vs = keys.filter(k => /^v\d+$/.test(k)).sort().reverse()
@@ -41,7 +37,7 @@ export default function Home() {
     })
   }, [])
 
-  // se não houver versão selecionada, exibe o upload
+  // 2) fallback de upload antes de ter currentVersion
   if (!currentVersion) {
     return (
       <div className="min-h-screen bg-black p-8 text-white flex flex-col items-center justify-center">
@@ -59,12 +55,11 @@ export default function Home() {
     )
   }
 
-  // sempre que a versão muda, busca os dados
+  // 3) carrega dados ao selecionar versão
   useEffect(() => {
     if (!currentVersion) return
     localforage.getItem<any[]>(currentVersion).then(arr => {
       setData(arr || [])
-      // reset de filtros/abas
       setActiveTab(0)
       setFilterProject('Todos')
       setFilterTribe('Todas')
@@ -72,10 +67,15 @@ export default function Home() {
     })
   }, [currentVersion])
 
-  // aplica filtros de projeto e tribo (adapte filterPeriod conforme necessidade)
+  // 4) aplica filtros
   const filtered = data
-    .filter(d => filterProject === 'Todos' || d.Projeto === filterProject)
-    .filter(d => filterTribe === 'Todas' || d.Unidade === filterTribe)
+    .filter(d => filterProject === 'Todos'  || d.Projeto === filterProject)
+    .filter(d => filterTribe   === 'Todas' || d.Unidade === filterTribe)
+    // (se quiser filtrar por período, implemente aqui)
+
+  // 5) valores únicos para dropdowns, sem usar spread em Set
+  const projects = Array.from(new Set(data.map(d => d.Projeto)))
+  const tribes   = Array.from(new Set(data.map(d => d.Unidade)))
 
   return (
     <>
@@ -85,7 +85,6 @@ export default function Home() {
       </Head>
 
       <div className="min-h-screen bg-black text-white flex flex-col">
-        {/* Header com dropdown de versões */}
         <Header
           versions={versions}
           currentVersion={currentVersion}
@@ -93,7 +92,7 @@ export default function Home() {
         />
 
         <main className="p-6 flex-1">
-          {/* Filtros */}
+          {/* filtros */}
           <div className="flex flex-wrap gap-4 mb-6">
             <select
               value={filterProject}
@@ -103,7 +102,7 @@ export default function Home() {
               className="bg-gray-800 px-3 py-2 rounded"
             >
               <option>Todos</option>
-              {[...new Set(data.map(d => d.Projeto))].map(p => (
+              {projects.map(p => (
                 <option key={p}>{p}</option>
               ))}
             </select>
@@ -116,7 +115,7 @@ export default function Home() {
               className="bg-gray-800 px-3 py-2 rounded"
             >
               <option>Todas</option>
-              {[...new Set(data.map(d => d.Unidade))].map(t => (
+              {tribes.map(t => (
                 <option key={t}>{t}</option>
               ))}
             </select>
@@ -134,14 +133,14 @@ export default function Home() {
             </select>
           </div>
 
-          {/* Navegação por abas */}
+          {/* abas */}
           <TabsNav
             tabs={TAB_NAMES}
             activeIndex={activeTab}
             onChange={setActiveTab}
           />
 
-          {/* Conteúdo das abas */}
+          {/* conteúdo */}
           <div className="mt-6 space-y-8">
             {activeTab === 0 && (
               <>
