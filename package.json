@@ -30,3 +30,8 @@
     "serve": "^14.0.0"
   }
 }
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",       // sem "&& next export"
+  "start": "serve out"
+}
