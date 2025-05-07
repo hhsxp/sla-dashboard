@@ -1,7 +1,7 @@
 import localforage from 'localforage';
 import { v4 as uuid } from 'uuid';
 
-type Version = { id: string; ts: string; data: any[] };
+export type Version = { id: string; ts: string; data: any[] };
 const KEY = 'sla_versions';
 
 export async function getVersions(): Promise<Version[]> {
