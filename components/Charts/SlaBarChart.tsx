@@ -1,24 +1,28 @@
-import React from 'react';
-import { BarChart, XAxis, YAxis, Tooltip, Legend, Bar, ResponsiveContainer } from 'recharts';
+// components/Charts/SlaBarChart.tsx
+import React from 'react'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts'
 
-export function SlaBarChart({ data }: { data: any[] }) {
-  const grouped = data.reduce((acc, r) => {
-    const p = r.Projeto as string;
-    acc[p] = acc[p] || { Projeto: p, Atingido: 0, Violado: 0 };
-    r.CumpriuSLA_Res ? acc[p].Atingido++ : acc[p].Violado++;
-    return acc;
-  }, {} as Record<string, any>);
-  const chartData = Object.values(grouped);
+export interface SlaBarChartProps {
+  data: Array<{
+    projeto: string
+    atingido: number
+    violado: number
+  }>
+}
+
+export default function SlaBarChart({ data }: SlaBarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData}>
-        <XAxis dataKey="Projeto" />
-        <YAxis />
+      <BarChart data={data}>
+        <XAxis dataKey="projeto" tick={{ fill: '#fff' }} />
+        <YAxis tick={{ fill: '#fff' }} />
         <Tooltip />
-        <Legend />
-        <Bar dataKey="Atingido" fill="#28a745" />
-        <Bar dataKey="Violado" fill="#dc3545" />
+        <Legend formatter={(value) => value === 'atingido' ? 'Atingido' : 'Violado'} />
+        <Bar dataKey="atingido" name="Atingido" fill="#28a745" />
+        <Bar dataKey="violado" name="Violado" fill="#dc3545" />
       </BarChart>
     </ResponsiveContainer>
-  );
+  )
 }
