@@ -1,24 +1,42 @@
-import localforage from 'localforage';
-import { v4 as uuid } from 'uuid';
+// utils/storage.ts
+import localforage from 'localforage'
+import { v4 as uuidv4 } from 'uuid'
 
-export type Version = { id: string; ts: string; data: any[] };
-const KEY = 'sla_versions';
+export interface Version {
+  id: string    // uuid
+  ts: string    // timestamp ISO
+  data: any[]   // payload
+}
 
+const KEY = 'sla_versions'
+
+/**
+ * Retorna todas as versões salvas
+ */
 export async function getVersions(): Promise<Version[]> {
-  return (await localforage.getItem<Version[]>(KEY)) || [];
+  const arr = (await localforage.getItem<Version[]>(KEY)) || []
+  return arr.sort((a, b) => b.ts.localeCompare(a.ts))
 }
 
-export async function addVersion(data: any[]): Promise<string> {
-  const versions = await getVersions();
-  const id = uuid();
-  const ts = new Date().toISOString();
-  versions.unshift({ id, ts, data });
-  if (versions.length > 4) versions.pop();
-  await localforage.setItem(KEY, versions);
-  return id;
+/**
+ * Adiciona uma nova versão ao storage
+ */
+export async function addVersion(data: any[]): Promise<Version> {
+  const versions = await getVersions()
+  const v: Version = {
+    id: uuidv4(),
+    ts: new Date().toISOString(),
+    data
+  }
+  versions.unshift(v)
+  await localforage.setItem(KEY, versions)
+  return v
 }
 
-export async function getDataById(id: string): Promise<any[] | null> {
-  const versions = await getVersions();
-  return versions.find(v => v.id === id)?.data || null;
+/**
+ * Busca uma versão pelo ID
+ */
+export async function getVersion(id: string): Promise<Version|undefined> {
+  const versions = await getVersions()
+  return versions.find(v => v.id === id)
 }
