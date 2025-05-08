@@ -1,8 +1,7 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   reactStrictMode: true,
+  // swcMinify foi removido porque é agora padrão e gera warning
 };
 
 module.exports = nextConfig;
