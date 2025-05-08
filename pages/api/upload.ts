@@ -17,27 +17,25 @@ export default async function handler(
     return res.status(405).json({ error: 'Método não permitido' })
   }
 
-  // 1) Parse multipart/form-data
+  // 1) Parse multipart/form-data e extrai o arquivo
   const file = await new Promise<formidable.File>((resolve, reject) => {
     const form = new formidable.IncomingForm()
-    form.parse(req, (err, _fields, files) => {
-      if (err) return reject(err)
+    form.parse(req, (_err, _fields, files) => {
       const f = files.file
-      if (Array.isArray(f)) resolve(f[0])
-      else resolve(f as formidable.File)
+      if (!f) return reject(new Error('Arquivo não enviado'))
+      resolve(Array.isArray(f) ? f[0] : (f as formidable.File))
     })
   })
 
-  // 2) Lê o Excel via ExcelJS
+  // 2) Lê o Excel (usando cast a any para filepath)
   const workbook = new ExcelJS.Workbook()
-  // ⚠️ aqui fazemos cast a any para pegar o filepath real
   const tmpPath = (file as any).filepath
   await workbook.xlsx.readFile(tmpPath)
 
   // 3) Parse da aba "Tickets"
   const ticketsSheet = workbook.getWorksheet('Tickets')
   const tickets: any[] = []
-  ticketsSheet.eachRow((row, rowNumber) => {
+  ticketsSheet.eachRow((row: any, rowNumber: number) => {
     if (rowNumber === 1) return
     tickets.push({
       Tipo:           row.getCell(1).value,
@@ -61,23 +59,23 @@ export default async function handler(
   // 4) Parse da aba "Base"
   const baseSheet = workbook.getWorksheet('Base')
   const baseData: any[] = []
-  baseSheet.eachRow((row, rowNumber) => {
+  baseSheet.eachRow((row: any, rowNumber: number) => {
     if (rowNumber === 1) return
     baseData.push({
-      Chave:    row.getCell(2).value,
-      Horas_PR: row.getCell(6).value,
-      Flag_PR:  row.getCell(7).value,
+      Chave:     row.getCell(2).value,
+      Horas_PR:  row.getCell(6).value,
+      Flag_PR:   row.getCell(7).value,
       Horas_RES: row.getCell(8).value,
       Flag_RES:  row.getCell(9).value,
     })
   })
 
-  // 5) Merge
+  // 5) Merge de Tickets e Base
   const allData = tickets.map(t => ({
     ...t,
     ...(baseData.find(b => b.Chave === t.Chave) || {})
   }))
 
-  // 6) Retorno
+  // 6) Retorna JSON
   return res.status(200).json({ count: allData.length, data: allData })
 }
