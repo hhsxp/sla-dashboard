@@ -12,20 +12,20 @@
     "next": "15.3.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "localforage": "^1.10.0",
-    "uuid": "^9.0.0",
-    "react-dropzone": "^15.2.3",
+    "react-dropzone": "^14.2.6",
+    "exceljs": "^4.3.0",
     "xlsx": "^0.18.5",
     "file-saver": "^2.0.5",
     "@tanstack/react-table": "^8.8.5",
-    "recharts": "^2.4.2"
+    "recharts": "^2.4.2",
+    "localforage": "^1.10.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "typescript": "^5.1.6",
     "@types/react": "^18.0.28",
     "@types/node": "^20.3.1",
-    "@types/uuid": "^9.0.1",
-    "@types/react-dropzone": "^14.2.5",
-    "@types/file-saver": "^2.0.5"
+    "@types/file-saver": "^2.0.5",
+    "@types/xlsx": "^0.18.5"
   }
 }
