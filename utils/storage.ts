@@ -1,30 +1,34 @@
 // utils/storage.ts
 import localforage from 'localforage'
-import { v4 as uuidv4 } from 'uuid'
 
 export interface Version {
-  id: string    // uuid
-  ts: string    // timestamp ISO
-  data: any[]   // payload
+  id: string   // uuid-like
+  ts: string   // timestamp ISO
+  data: any[]  // payload
 }
 
 const KEY = 'sla_versions'
 
-/**
- * Retorna todas as versões salvas
- */
+/** Gera um ID único (usa crypto.randomUUID no browser/Node moderno) */
+function makeId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return (crypto as any).randomUUID()
+  }
+  // fallback simples
+  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
+/** Retorna todas as versões, da mais nova para a mais antiga */
 export async function getVersions(): Promise<Version[]> {
   const arr = (await localforage.getItem<Version[]>(KEY)) || []
   return arr.sort((a, b) => b.ts.localeCompare(a.ts))
 }
 
-/**
- * Adiciona uma nova versão ao storage
- */
+/** Adiciona uma nova versão com o array de dados fornecido */
 export async function addVersion(data: any[]): Promise<Version> {
   const versions = await getVersions()
   const v: Version = {
-    id: uuidv4(),
+    id: makeId(),
     ts: new Date().toISOString(),
     data
   }
@@ -33,10 +37,7 @@ export async function addVersion(data: any[]): Promise<Version> {
   return v
 }
 
-/**
- * Busca uma versão pelo ID
- */
-export async function getVersion(id: string): Promise<Version|undefined> {
-  const versions = await getVersions()
-  return versions.find(v => v.id === id)
+/** Busca uma versão pelo seu ID */
+export async function getVersion(id: string): Promise<Version | undefined> {
+  return (await getVersions()).find(v => v.id === id)
 }
