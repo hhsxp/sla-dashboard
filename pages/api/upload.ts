@@ -1,105 +1,114 @@
 // pages/api/upload.ts
-
 import type { NextApiRequest, NextApiResponse } from 'next'
-import formidable, { File as FormidableFile, Fields, Files } from 'formidable'
+import formidable, { File as FormidableFile, Files } from 'formidable'
 import ExcelJS from 'exceljs'
 
+/**
+ * Desativa o bodyParser padrão do Next.js
+ * para podermos usar o formidable
+ */
 export const config = {
-  api: { bodyParser: false },
+  api: {
+    bodyParser: false,
+  },
 }
 
 type Ticket = {
   Tipo: string
   Chave: string
   Projeto: string
+  Tribo: string
   Prioridade: string
-  'Horas Res.': number
-  'SLA (h)': number
-  'SLA OK?': boolean
-  Criado: string
-  Atualizado: string
+  CriadoEm: string
+  AtualizadoEm: string
   Responsavel: string
+  TempoPR: number
+  TempoRES: number
+  SLAh: number
+  SLAok: boolean
 }
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Ticket[] | { error: string }>
+  res: NextApiResponse<{ tickets: Ticket[] } | { error: string }>
 ) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido' })
+  }
+
+  // 1) Parse do form-data com formidable
+  const form = new formidable.IncomingForm()
+  const { files } = (await new Promise<{ files: Files }>(
+    (resolve, reject) =>
+      form.parse(req, (err, _fields, files) =>
+        err ? reject(err) : resolve({ files })
+      )
+  )) as { files: Files }
+
+  // A chave "file" deve corresponder ao name do input no front-end
+  const file = files.file as FormidableFile
+  if (!file) {
+    return res.status(400).json({ error: 'Arquivo não enviado' })
+  }
+
   try {
-    // 1) Parse multipart/form-data
-    const form = new formidable.IncomingForm()
-    const { files } = await new Promise<{ fields: Fields; files: Files }>(
-      (resolve, reject) => {
-        form.parse(req, (err, _fields, files) =>
-          err ? reject(err) : resolve({ fields: _fields, files })
-        )
-      }
-    )
-
-    // 2) Recupera o arquivo enviado (input name="file")
-    const uploaded = files.file as FormidableFile
-    if (!uploaded || Array.isArray(uploaded)) {
-      return res.status(400).json({ error: 'Nenhum arquivo encontrado em `file`' })
-    }
-
-    // 3) Lê o Excel do caminho temporário
+    // 2) Lê o Excel com ExcelJS
     const workbook = new ExcelJS.Workbook()
-    await workbook.xlsx.readFile((uploaded as any).filepath)
+    await workbook.xlsx.readFile(file.filepath!)
 
-    // 4) Extrai a aba "Tickets"
+    // 3) Seleciona a aba "Tickets"
     const sheet = workbook.getWorksheet('Tickets')
     if (!sheet) {
-      return res.status(400).json({ error: 'Aba "Tickets" não encontrada.' })
+      return res.status(400).json({ error: 'Aba "Tickets" não encontrada' })
     }
 
-    // Helper para extrair texto de qualquer cell
-    const cellText = (cell: any) => {
-      if (cell.value == null) return ''
-      if (cell.type === ExcelJS.ValueType.RichText)
-        return cell.value.richText.map((r: any) => r.text).join('')
-      if (cell.type === ExcelJS.ValueType.Hyperlink)
-        return cell.value.text
-      return String(cell.value)
-    }
-
-    // Helper para converter datas em ISO-string
-    const toIso = (v: any) =>
-      v instanceof Date ? v.toISOString() : String(v || '')
-
-    // 5) Monta o array de tickets
+    // 4) Para cada linha (pulando o cabeçalho) monta um objeto Ticket
     const tickets: Ticket[] = []
-    sheet.eachRow((row: any, idx: number) => {
-      if (idx === 1) return // pula cabeçalho
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return // pula cabeçalho
 
-      const Tipo        = cellText(row.getCell(1))
-      const Chave       = cellText(row.getCell(2))
-      const Projeto     = cellText(row.getCell(3))
-      const Prioridade  = cellText(row.getCell(4))
-      const HorasRes    = Number(row.getCell(5).value) || 0
-      const SLA         = Number(row.getCell(6).value) || 0
-      const SLAOK       = cellText(row.getCell(7)).toLowerCase() === 'true'
-      const Criado      = toIso(row.getCell(8).value)
-      const Atualizado  = toIso(row.getCell(9).value)
-      const Responsavel = cellText(row.getCell(10))
+      // usa `.text` para extrair o valor já em string
+      const Tipo       = row.getCell(1).text.trim()
+      const Chave      = row.getCell(2).text.trim()
+      const Projeto    = row.getCell(3).text.trim()
+      const Tribo      = row.getCell(4).text.trim()
+      const Prioridade = row.getCell(5).text.trim()
+
+      // datas vêm no formato ISO ou data do Excel
+      const CriadoEm   = row.getCell(6).text.trim()
+      const AtualizadoEm = row.getCell(7).text.trim()
+
+      const Responsavel = row.getCell(8).text.trim()
+
+      // números: usa `value` que já é número ou string
+      const TempoPR   = Number(row.getCell(9).value) || 0
+      const TempoRES  = Number(row.getCell(10).value) || 0
+      const SLAh      = Number(row.getCell(11).value) || 0
+
+      // booleano: qualquer texto "true"/"yes"/"sim" vira true
+      const okCell    = row.getCell(12).text.trim().toLowerCase()
+      const SLAok     = okCell === 'true' || okCell === 'sim' || okCell === 'yes'
 
       tickets.push({
         Tipo,
         Chave,
         Projeto,
+        Tribo,
         Prioridade,
-        'Horas Res.': HorasRes,
-        'SLA (h)': SLA,
-        'SLA OK?': SLAOK,
-        Criado,
-        Atualizado,
+        CriadoEm,
+        AtualizadoEm,
         Responsavel,
+        TempoPR,
+        TempoRES,
+        SLAh,
+        SLAok,
       })
     })
 
-    // 6) Retorna o JSON
-    return res.status(200).json(tickets)
-  } catch (err: any) {
-    console.error(err)
-    return res.status(500).json({ error: err.message || 'Erro interno' })
+    // 5) Retorna o JSON dos tickets
+    return res.status(200).json({ tickets })
+  } catch (e: any) {
+    console.error('Erro ao ler Excel:', e)
+    return res.status(500).json({ error: 'Erro interno ao processar planilha' })
   }
 }
