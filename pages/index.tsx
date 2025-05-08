@@ -3,14 +3,17 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import localforage from 'localforage'
 
-import Header from '../components/Header'
-import UploadDropzone from '../components/UploadDropzone'
-import TabsNav from '../components/TabsNav'
+// Components que exportam como named
+import { Header } from '../components/Header'
+import { UploadDropzone } from '../components/UploadDropzone'
+import { TabsNav } from '../components/TabsNav'
+import { Footer } from '../components/Footer'
+
+// Charts que exportam como default
 import SlaBarChart from '../components/Charts/SlaBarChart'
 import TicketsPieChart from '../components/Charts/TicketsPieChart'
 import EffLineChart from '../components/Charts/EffLineChart'
 import RiskTimeline from '../components/Charts/RiskTimeline'
-import Footer from '../components/Footer'
 
 import type { Version } from '../utils/storage'
 
@@ -60,7 +63,7 @@ export default function Home() {
   const filtered = data
     .filter(d => projectFilter === 'Todos' || d.Projeto === projectFilter)
     .filter(d => tribeFilter === 'Todas' || d.Tribo === tribeFilter)
-    // você pode adicionar mais filtros aqui…
+    // adicione mais filtros conforme precisar
 
   // ─── Retornos condicionais após os hooks ──────────────
   if (!loaded) {
@@ -69,10 +72,18 @@ export default function Home() {
         {!currentVersion ? (
           <UploadDropzone
             onComplete={async key => {
-              // após o upload, recarrega lista de versões
+              // após upload, recarrega a lista de versões
               const vers = await localforage.keys()
-              const v = vers.filter(k => /^v\d+$/.test(k)).sort((a, b) => b.localeCompare(a))
-              setVersions(v.map(id => ({ id, ts: new Date(parseInt(id.slice(1), 10)).toLocaleString(), data: [] })))
+              const v = vers
+                .filter(k => /^v\d+$/.test(k))
+                .sort((a, b) => b.localeCompare(a))
+              setVersions(
+                v.map(id => ({
+                  id,
+                  ts: new Date(parseInt(id.slice(1), 10)).toLocaleString(),
+                  data: [],
+                }))
+              )
               setCurrentVersion(key)
             }}
           />
@@ -83,7 +94,7 @@ export default function Home() {
     )
   }
 
-  // ─── Interface principal ──────────────────────────────
+  // ─── UI principal ──────────────────────────────────────
   return (
     <>
       <Head>
@@ -96,7 +107,7 @@ export default function Home() {
         onSelect={setCurrentVersion}
       />
 
-      {/* Filtros */}
+      {/* Filtros de projeto, tribo e período */}
       <div className="flex space-x-4 p-4 bg-gray-800 text-white">
         <select
           value={projectFilter}
