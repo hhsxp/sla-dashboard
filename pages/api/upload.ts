@@ -32,61 +32,53 @@ export default async function handler(
   res: NextApiResponse<Ticket[] | { error: string }>,
 ) {
   try {
-    // 1) Parse multipart/form-data
+    // 1) Parses multipart/form-data
     const form = new formidable.IncomingForm()
-    const [, fieldsFiles] = await new Promise<
+    const [, files] = await new Promise<
       [formidable.Fields, formidable.Files]
     >((resolve, reject) =>
       form.parse(req, (err, fields, files) =>
         err ? reject(err) : resolve([fields, files]),
       ),
     )
-    const files = fieldsFiles as formidable.Files
-    const file = files.file as formidable.File
+    const file = (files.file as formidable.File)
 
-    // v2 do formidable às vezes usa 'filepath' ou 'path'
+    // formidable v2 pode usar .filepath ou .path
     const tempPath = (file as any).filepath ?? (file as any).path
-    if (!tempPath) throw new Error('Não foi possível ler o arquivo enviado.')
+    if (!tempPath) throw new Error('Arquivo não recebido corretamente.')
 
-    // 2) Leitura do Excel
+    // 2) Lê o Excel
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.readFile(tempPath)
 
-    // 3) Monta mapa a partir da aba "Base"
+    // 3) Monta um mapa a partir da aba "Base"
     const baseSheet = workbook.getWorksheet('Base')
     const baseMap = new Map<
       string,
-      {
-        TempoPR: number
-        TempoRES: number
-        HorasPR: number
-        FlagPR: boolean
-        HorasRES: number
-        FlagRES: boolean
-      }
+      { TempoPR: number; TempoRES: number; HorasPR: number; FlagPR: boolean; HorasRES: number; FlagRES: boolean }
     >()
 
-    baseSheet.eachRow((row: ExcelJS.Row, rowNum: number) => {
-      if (rowNum === 1) return // cabeçalho
-      const tipo = row.getCell(1).text.trim()
-      const chave = row.getCell(2).text.trim()
-      const key = `${tipo}#${chave}`
+    baseSheet.eachRow((row: any, rowNum: number) => {
+      if (rowNum === 1) return
+      const tipo    = row.getCell(1).text.trim()
+      const chave   = row.getCell(2).text.trim()
+      const key     = `${tipo}#${chave}`
 
-      const TempoPR   = parseFloat(row.getCell(14).text) || 0
-      const TempoRES  = parseFloat(row.getCell(15).text) || 0
-      const HorasPR   = parseFloat(row.getCell(16).text) || 0
-      const FlagPR    = row.getCell(17).text.toLowerCase() === 'true'
-      const HorasRES  = parseFloat(row.getCell(18).text) || 0
-      const FlagRES   = row.getCell(19).text.toLowerCase() === 'true'
+      const TempoPR  = parseFloat(row.getCell(14).text) || 0
+      const TempoRES = parseFloat(row.getCell(15).text) || 0
+      const HorasPR  = parseFloat(row.getCell(16).text) || 0
+      const FlagPR   = row.getCell(17).text.toLowerCase() === 'true'
+      const HorasRES = parseFloat(row.getCell(18).text) || 0
+      const FlagRES  = row.getCell(19).text.toLowerCase() === 'true'
 
       baseMap.set(key, { TempoPR, TempoRES, HorasPR, FlagPR, HorasRES, FlagRES })
     })
 
-    // 4) Processa a aba "Tickets" e cruza com o mapa acima
+    // 4) Processa a aba "Tickets" cruzando com o mapa
     const ticketsSheet = workbook.getWorksheet('Tickets')
     const tickets: Ticket[] = []
 
-    ticketsSheet.eachRow((row: ExcelJS.Row, rowNum: number) => {
+    ticketsSheet.eachRow((row: any, rowNum: number) => {
       if (rowNum === 1) return
       const TipoItem       = row.getCell(1).text.trim()
       const Chave          = row.getCell(2).text.trim()
@@ -98,8 +90,8 @@ export default async function handler(
       const Atualizado     = (row.getCell(10).value as Date)?.toISOString() || ''
       const Resolvido      = (row.getCell(11).value as Date)?.toISOString() || ''
 
-      const mapKey = `${TipoItem}#${Chave}`
-      const base   = baseMap.get(mapKey) || {
+      const key = `${TipoItem}#${Chave}`
+      const base = baseMap.get(key) || {
         TempoPR: 0, TempoRES: 0,
         HorasPR: 0, FlagPR: false,
         HorasRES: 0, FlagRES: false,
@@ -124,7 +116,7 @@ export default async function handler(
       })
     })
 
-    // 5) Retorna JSON completo
+    // 5) Retorna o array de tickets
     res.status(200).json(tickets)
   } catch (err: any) {
     console.error(err)
