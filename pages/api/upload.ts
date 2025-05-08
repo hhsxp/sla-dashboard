@@ -1,7 +1,7 @@
 // pages/api/upload.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
 import formidable from 'formidable'
-import ExcelJS from 'exceljs'
+import ExcelJS, { Row as ExcelRow } from 'exceljs'
 
 export const config = {
   api: {
@@ -30,7 +30,7 @@ export default async function handler(
   res: NextApiResponse<any>
 ) {
   try {
-    // 1) Parse do form
+    // 1) Faz parse do form multipart
     const form = new formidable.IncomingForm()
     const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>(
       (resolve, reject) =>
@@ -40,35 +40,33 @@ export default async function handler(
         })
     )
 
-    // 2) Pega o arquivo (nome do input: <input name="file" />)
-    const file = (files.file as any)
-    // tenta filepath (formidable v3+) ou path (v1/2)
-    const filepath: string | undefined =
-      file.filepath ?? file.filePath ?? file.path
+    // 2) Recupera o arquivo enviado (<input name="file" />)
+    const anyFile = (files.file as any)
+    const filepath = anyFile.filepath ?? anyFile.filePath ?? anyFile.path
     if (!filepath) {
-      throw new Error('Arquivo não recebido corretamente.')
+      throw new Error('Arquivo não foi recebido corretamente.')
     }
 
-    // 3) Lê o Excel
+    // 3) Lê o Excel com ExcelJS
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.readFile(filepath)
 
-    // 4) Monta o map da aba "Base"
+    // 4) Monta um map a partir da aba "Base"
     const baseSheet = workbook.getWorksheet('Base')
     const baseMap: Record<string, BaseInfo> = {}
-    baseSheet.eachRow((row, rowNum) => {
-      if (rowNum === 1) return
-      const chave = row.getCell(2).text.trim()       // coluna B = Chave
-      const unidade = row.getCell(3).text.trim()     // coluna C = UnidadeNegocio
-      const tribo = row.getCell(4).text.trim()       // coluna D = Tribo
-      const sla = parseFloat(row.getCell(5).text)    // coluna E = SLA (h)
+    baseSheet.eachRow((row: ExcelRow, rowNum: number) => {
+      if (rowNum === 1) return // pula header
+      const chave = row.getCell(2).text.trim()       // coluna B
+      const unidade = row.getCell(3).text.trim()     // coluna C
+      const tribo = row.getCell(4).text.trim()       // coluna D
+      const sla = parseFloat(row.getCell(5).text)    // coluna E
       baseMap[chave] = { UnidadeNegocio: unidade, Tribo: tribo, SLA_Horas: sla }
     })
 
-    // 5) Lê a aba "Tickets" e faz merge com baseMap
+    // 5) Lê a aba "Tickets" e cruza com baseMap
     const ticketsSheet = workbook.getWorksheet('Tickets')
     const merged: Array<Ticket & BaseInfo> = []
-    ticketsSheet.eachRow((row, rowNum) => {
+    ticketsSheet.eachRow((row: ExcelRow, rowNum: number) => {
       if (rowNum === 1) return
       const ticket: Ticket = {
         TipoItem:   row.getCell(1).text,
@@ -87,10 +85,11 @@ export default async function handler(
       merged.push({ ...ticket, ...info })
     })
 
-    // 6) Retorna tudo mesclado
+    // 6) Retorna JSON com tickets + dados de Base
     return res.status(200).json(merged)
+
   } catch (err: any) {
-    console.error(err)
+    console.error('upload.ts error:', err)
     return res.status(500).json({ error: err.message })
   }
 }
