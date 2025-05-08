@@ -27,22 +27,21 @@ export default async function handler(
   try {
     // 1) Parse form-data
     const form = new formidable.IncomingForm()
-    const { fields, files } = await new Promise<{ fields: Fields; files: Files }>(
+    const { files } = await new Promise<{ fields: Fields; files: Files }>(
       (resolve, reject) => {
-        form.parse(req, (err, fields, files) => {
-          if (err) reject(err)
-          else resolve({ fields, files })
-        })
+        form.parse(req, (err, _fields, files) =>
+          err ? reject(err) : resolve({ fields: _fields, files })
+        )
       }
     )
 
-    // 2) Recupera o arquivo enviado no input name="file"
+    // 2) Recupera o arquivo
     const uploaded = files.file as FormidableFile
     if (!uploaded || Array.isArray(uploaded)) {
       return res.status(400).json({ error: 'Nenhum arquivo encontrado em `file`' })
     }
 
-    // 3) Lê o Excel do caminho temporário
+    // 3) Lê o Excel
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.readFile((uploaded as any).filepath)
 
@@ -51,10 +50,10 @@ export default async function handler(
     if (!sheet) return res.status(400).json({ error: 'Aba "Tickets" não encontrada.' })
 
     // Função para extrair texto de cells
-    const cellText = (cell: ExcelJS.Cell) => {
+    const cellText = (cell: any) => {
       if (cell.value == null) return ''
       if (cell.type === ExcelJS.ValueType.RichText)
-        return cell.value.richText.map(r => r.text).join('')
+        return cell.value.richText.map((r: any) => r.text).join('')
       if (cell.type === ExcelJS.ValueType.Hyperlink)
         return cell.value.text
       return String(cell.value)
@@ -62,9 +61,8 @@ export default async function handler(
 
     // 5) Monta array de tickets
     const tickets: Ticket[] = []
-    sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return // pula cabeçalho
-
+    sheet.eachRow((row, idx) => {
+      if (idx === 1) return
       const Tipo       = cellText(row.getCell(1))
       const Chave      = cellText(row.getCell(2))
       const Projeto    = cellText(row.getCell(3))
@@ -91,7 +89,6 @@ export default async function handler(
       })
     })
 
-    // 6) Responde com o JSON
     return res.status(200).json(tickets)
   } catch (err: any) {
     console.error(err)
