@@ -1,16 +1,21 @@
-// pages/index.tsx
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import localforage from 'localforage'
 
 import { Header } from '../components/Header'
 import { UploadDropzone } from '../components/UploadDropzone'
-import { TabsNav } from '../components/TabsNav'
-import { SlaBarChart } from '../components/Charts/SlaBarChart'
-import { TicketsPieChart } from '../components/Charts/TicketsPieChart'
-import { EffLineChart } from '../components/Charts/EffLineChart'
-import { RiskTimeline } from '../components/Charts/RiskTimeline'
-import { Footer } from '../components/Footer'
+-import { TabsNav } from '../components/TabsNav'
+-import { SlaBarChart } from '../components/Charts/SlaBarChart'
+-import { TicketsPieChart } from '../components/Charts/TicketsPieChart'
+-import { EffLineChart } from '../components/Charts/EffLineChart'
+-import { RiskTimeline } from '../components/Charts/RiskTimeline'
+-import { Footer } from '../components/Footer'
++ import TabsNav from '../components/TabsNav'
++ import SlaBarChart from '../components/Charts/SlaBarChart'
++ import TicketsPieChart from '../components/Charts/TicketsPieChart'
++ import EffLineChart from '../components/Charts/EffLineChart'
++ import RiskTimeline from '../components/Charts/RiskTimeline'
++ import Footer from '../components/Footer'
 
 import type { Version } from '../utils/storage'
 
