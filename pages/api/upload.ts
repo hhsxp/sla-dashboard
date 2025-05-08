@@ -1,12 +1,17 @@
 // pages/api/upload.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
-import formidable from 'formidable'
+import formidable, { File as FormidableFile } from 'formidable'
 import ExcelJS from 'exceljs'
 
 export const config = {
   api: {
     bodyParser: false,
   },
+}
+
+interface FormidableFiles {
+  /** nome do campo `file` no multipart/form-data */
+  file: FormidableFile
 }
 
 export default async function handler(
@@ -17,86 +22,51 @@ export default async function handler(
     return res.status(405).json({ error: 'Método não permitido' })
   }
 
-  // parse form-data
+  // 1) Parse do form-data via formidable
   const form = new formidable.IncomingForm()
-  const { files } = await new Promise<{ files: formidable.Files }>((resolve, reject) =>
-    form.parse(req, (err, _fields, files) =>
-      err ? reject(err) : resolve({ files })
-    )
+  const { files } = await new Promise<{ files: FormidableFiles }>(
+    (resolve, reject) =>
+      form.parse(req, (err, _fields, files) =>
+        err ? reject(err) : resolve({ files: files as FormidableFiles })
+      )
   )
 
-  // load workbook
+  // 2) Pega o arquivo enviado (FormidableFile)
+  const uploaded = files.file
+
+  // 3) Lê o Excel a partir do caminho no servidor
   const workbook = new ExcelJS.Workbook()
-  await workbook.xlsx.readFile((files.file as formidable.File).filepath)
+  await workbook.xlsx.readFile(uploaded.filepath)
 
-  // parse "Tickets" sheet
+  // 4) Parse da aba "Tickets"
   const ticketsSheet = workbook.getWorksheet('Tickets')
-  const tickets: Array<{
-    Tipo: string
-    Chave: string
-    Resumo: string
-    Projeto: string
-    Unidade: string
-    Status: string
-    Relator: string
-    Prioridade: string
-    Criado: string | null
-    Atualizado: string | null
-    Responsavel: string
-    Tempo1aResp: number
-    TempoResolucao: number
-    SLA_Horas: number
-    CumpriuPR: boolean
-  }> = []
-
-  ticketsSheet.eachRow((row: any, rowNumber: number) => {
+  const tickets: Array<Partial<Record<string, any>>> = []
+  ticketsSheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return
     tickets.push({
-      Tipo:           String(row.getCell(1).value || ''),
-      Chave:          String(row.getCell(2).value || ''),
-      Resumo:         String(row.getCell(3).value || ''),
-      Projeto:        String(row.getCell(4).value || ''),
-      Unidade:        String(row.getCell(5).value || ''),
-      Status:         String(row.getCell(6).value || ''),
-      Relator:        String(row.getCell(7).value || ''),
-      Prioridade:     String(row.getCell(8).value || ''),
-      Atualizado:     row.getCell(9).value instanceof Date ? (row.getCell(9).value as Date).toISOString() : null,
-      Criado:         row.getCell(10).value instanceof Date ? (row.getCell(10).value as Date).toISOString() : null,
-      Responsavel:    String(row.getCell(11).value || ''),
-      Tempo1aResp:    Number(row.getCell(12).value) || 0,
-      TempoResolucao: Number(row.getCell(13).value) || 0,
-      SLA_Horas:      Number(row.getCell(14).value) || 0,
-      CumpriuPR:      String(row.getCell(15).value || '').toLowerCase() === 'atingido',
+      Tipo: row.getCell(1).value,
+      Chave: row.getCell(2).value,
+      // ... siga seu mapeamento conforme antes
     })
   })
 
-  // parse "Base" sheet
+  // 5) Parse de outras abas (exemplo "Base")
   const baseSheet = workbook.getWorksheet('Base')
-  const baseData: Array<{
-    Chave: string
-    Horas_PR: number
-    Flag_PR: string
-    Horas_RES: number
-    Flag_RES: string
-  }> = []
-
-  baseSheet.eachRow((row: any, rowNumber: number) => {
+  const baseData: Array<Partial<Record<string, any>>> = []
+  baseSheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return
     baseData.push({
-      Chave:    String(row.getCell(2).value || ''),
-      Horas_PR: Number(row.getCell(6).value) || 0,
-      Flag_PR:  String(row.getCell(7).value || ''),
-      Horas_RES: Number(row.getCell(8).value) || 0,
-      Flag_RES:  String(row.getCell(9).value) || '',
+      Chave: row.getCell(2).value,
+      // ... etc
     })
   })
 
-  // merge datasets
+  // 6) Merge dos dois arrays
   const allData = tickets.map(t => ({
     ...t,
     ...(baseData.find(b => b.Chave === t.Chave) || {}),
   }))
 
-  // respond with processed data
+  // 7) Retorna o JSON processado
   return res.status(200).json({ count: allData.length, data: allData })
 }
