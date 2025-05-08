@@ -5,7 +5,7 @@ import ExcelJS from 'exceljs'
 
 export const config = {
   api: {
-    bodyParser: false, // desativa o parser padrão do Next
+    bodyParser: false,
   },
 }
 
@@ -46,23 +46,22 @@ export default async function handler(
   if (!incoming) {
     return res.status(400).json({ error: 'Nenhum arquivo enviado' })
   }
-
-  // Pode vir como array ou como único objeto
   const file = Array.isArray(incoming) ? incoming[0] : incoming
 
-  // 2) Normaliza o caminho no FS
-  // Formidable v1: file.path  •  v2+: file.filepath
+  // 2) Normaliza o caminho no FS (formidable v1: .path  •  v2+: .filepath)
   const localPath = (file as any).filepath ?? (file as any).path
   if (typeof localPath !== 'string') {
-    return res.status(400).json({ error: 'Não foi possível obter o caminho do arquivo' })
+    return res
+      .status(400)
+      .json({ error: 'Não foi possível obter o caminho do arquivo' })
   }
 
   try {
-    // 3) Lê o arquivo Excel
+    // 3) Lê o Excel
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.readFile(localPath)
 
-    // 4) Extrai a planilha "Tickets"
+    // 4) Seleciona a aba "Tickets"
     const sheet = workbook.getWorksheet('Tickets')
     if (!sheet) {
       return res.status(400).json({ error: 'Aba "Tickets" não encontrada' })
@@ -70,10 +69,10 @@ export default async function handler(
 
     // 5) Monta o array de tickets
     const tickets: Ticket[] = []
-    sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return // pula o cabeçalho
+    sheet.eachRow((row: any, rowNumber: number) => {
+      if (rowNumber === 1) return // pula cabeçalho
 
-      // extrai todo mundo como texto, número ou booleano
+      // extrai cada célula como texto
       const Tipo        = row.getCell(1).text.trim()
       const Chave       = row.getCell(2).text.trim()
       const Projeto     = row.getCell(3).text.trim()
@@ -87,7 +86,7 @@ export default async function handler(
       const TempoRES  = Number(row.getCell(10).value) || 0
       const SLAh      = Number(row.getCell(11).value) || 0
 
-      // aceita "true", "sim", "yes" como verdadeiros
+      // interpreta "true"/"sim"/"yes" como true
       const okTxt     = row.getCell(12).text.trim().toLowerCase()
       const SLAok     = ['true','sim','yes'].includes(okTxt)
 
