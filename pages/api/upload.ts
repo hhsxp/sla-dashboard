@@ -5,7 +5,7 @@ import ExcelJS from 'exceljs'
 
 export const config = {
   api: {
-    bodyParser: false, // obrigatório para uploads binários
+    bodyParser: false,
   },
 }
 
@@ -27,32 +27,35 @@ export default async function handler(
   res: NextApiResponse<{ tickets: Ticket[] } | { error: string }>
 ) {
   try {
-    // 1) Parse do multipart/form-data
+    // 1) parse multipart
     const form = new formidable.IncomingForm()
     const [fields, files] = await new Promise<[any, formidable.Files]>(
       (resolve, reject) =>
-        form.parse(req, (err, fields, files) =>
-          err ? reject(err) : resolve([fields, files])
-        )
+        form.parse(req, (err, f, fs) => (err ? reject(err) : resolve([f, fs])))
     )
-    // assumindo que o input name="file"
+
+    // 2) pega o arquivo
     const file = files.file as FormidableFile
-    if (!file.filepath) throw new Error('Arquivo não recebido corretamente.')
+    // tenta filepath, senão cai em path
+    const filePath =
+      (file as any).filepath ??
+      (file as any).filePath ??
+      (file as any).path
+    if (!filePath) throw new Error('Arquivo não encontrado no upload.')
 
-    // 2) Abre o Excel
+    // 3) lê o Excel
     const workbook = new ExcelJS.Workbook()
-    await workbook.xlsx.readFile(file.filepath)
+    await workbook.xlsx.readFile(filePath)
 
-    // 3) Seleciona a aba "Tickets"
+    // 4) worksheet "Tickets"
     const sheet = workbook.getWorksheet('Tickets')
     if (!sheet) throw new Error('Aba "Tickets" não encontrada.')
 
-    // 4) Itera as linhas, filtrando cabeçalho e filtros de ano/trimestre
+    // 5) itera linhas filtrando cabeçalho e filtros de ano/trimestre
     const tickets: Ticket[] = []
     sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return // pula o cabeçalho
+      if (rowNumber === 1) return
       const first = row.getCell(1).text.trim()
-      // pula linhas de filtro:
       if (
         first === '' ||
         first.startsWith('Anos (Atualizado') ||
@@ -75,10 +78,9 @@ export default async function handler(
       })
     })
 
-    // 5) Devolve JSON puro pro frontend
-    res.status(200).json({ tickets })
+    return res.status(200).json({ tickets })
   } catch (err: any) {
     console.error(err)
-    res.status(500).json({ error: err.message || 'Erro interno' })
+    return res.status(500).json({ error: err.message || 'Erro interno' })
   }
 }
