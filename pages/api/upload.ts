@@ -26,35 +26,47 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<{ tickets: Ticket[] } | { error: string }>
 ) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido' })
+  }
+
   try {
-    // 1) parse multipart
+    // 1) Parse multipart/form-data
     const form = new formidable.IncomingForm()
     const [fields, files] = await new Promise<[any, formidable.Files]>(
       (resolve, reject) =>
-        form.parse(req, (err, f, fs) => (err ? reject(err) : resolve([f, fs])))
+        form.parse(req, (err, fields, files) =>
+          err ? reject(err) : resolve([fields, files])
+        )
     )
 
-    // 2) pega o arquivo
-    const file = files.file as FormidableFile
-    // tenta filepath, senão cai em path
-    const filePath =
-      (file as any).filepath ??
-      (file as any).filePath ??
-      (file as any).path
-    if (!filePath) throw new Error('Arquivo não encontrado no upload.')
+    // 2) Obtém o arquivo do campo "file"
+    const incoming = files.file
+    if (!incoming) throw new Error('Nenhum arquivo enviado')
+    const file = Array.isArray(incoming) ? incoming[0] : incoming
 
-    // 3) lê o Excel
+    // 3) Normaliza caminho (formidable v1: .path, v2+: .filepath)
+    const filePath =
+      (file as any).filepath ?? (file as any).path
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('Não foi possível obter o caminho do arquivo')
+    }
+
+    // 4) Lê o Excel
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.readFile(filePath)
 
-    // 4) worksheet "Tickets"
+    // 5) Seleciona a aba "Tickets"
     const sheet = workbook.getWorksheet('Tickets')
-    if (!sheet) throw new Error('Aba "Tickets" não encontrada.')
+    if (!sheet) {
+      throw new Error('Aba "Tickets" não encontrada')
+    }
 
-    // 5) itera linhas filtrando cabeçalho e filtros de ano/trimestre
+    // 6) Itera as linhas, pulando cabeçalho e filtros de ano/trimestre
     const tickets: Ticket[] = []
-    sheet.eachRow((row, rowNumber) => {
+    sheet.eachRow((row: any, rowNumber: number) => {
       if (rowNumber === 1) return
+
       const first = row.getCell(1).text.trim()
       if (
         first === '' ||
@@ -78,9 +90,10 @@ export default async function handler(
       })
     })
 
+    // 7) Retorna o JSON com tickets
     return res.status(200).json({ tickets })
   } catch (err: any) {
-    console.error(err)
+    console.error('Upload API error:', err)
     return res.status(500).json({ error: err.message || 'Erro interno' })
   }
 }
