@@ -20,13 +20,16 @@
     "recharts": "^2.4.2",
     "localforage": "^1.10.0",
     "uuid": "^9.0.0",
-    "formidable": "^2.0.2"       
+    "formidable": "^2.0.2"
   },
   "devDependencies": {
     "typescript": "^5.1.6",
     "@types/react": "^18.0.28",
     "@types/node": "^20.3.1",
     "@types/file-saver": "^2.0.5",
-    "@types/formidable": "^1.2.4"
+    "@types/formidable": "^1.2.4",
+    "tailwindcss": "^3.4.4",
+    "postcss": "^8.4.23",
+    "autoprefixer": "^10.4.14"
   }
 }
