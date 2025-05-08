@@ -20,34 +20,37 @@ type Ticket = {
   Responsavel: string
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<Ticket[] | { error: string }>) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<Ticket[] | { error: string }>
+) {
   try {
-    // 1) Parse multipart/form-data manualmente para obter fields e files
+    // 1) Parse form-data
     const form = new formidable.IncomingForm()
-    const { fields, files } = await new Promise<{ fields: Fields; files: Files }>((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err)
-        else resolve({ fields, files })
-      })
-    })
+    const { fields, files } = await new Promise<{ fields: Fields; files: Files }>(
+      (resolve, reject) => {
+        form.parse(req, (err, fields, files) => {
+          if (err) reject(err)
+          else resolve({ fields, files })
+        })
+      }
+    )
 
-    // 2) Recupera o arquivo enviado (input name="file")
+    // 2) Recupera o arquivo enviado no input name="file"
     const uploaded = files.file as FormidableFile
     if (!uploaded || Array.isArray(uploaded)) {
       return res.status(400).json({ error: 'Nenhum arquivo encontrado em `file`' })
     }
 
-    // 3) Lê o Excel
+    // 3) Lê o Excel do caminho temporário
     const workbook = new ExcelJS.Workbook()
-    await workbook.xlsx.readFile(uploaded.filepath)
+    await workbook.xlsx.readFile((uploaded as any).filepath)
 
-    // 4) Extrai planilha "Tickets"
+    // 4) Extrai aba "Tickets"
     const sheet = workbook.getWorksheet('Tickets')
-    if (!sheet) {
-      return res.status(400).json({ error: 'Aba "Tickets" não encontrada na planilha.' })
-    }
+    if (!sheet) return res.status(400).json({ error: 'Aba "Tickets" não encontrada.' })
 
-    // Função auxiliar para textos
+    // Função para extrair texto de cells
     const cellText = (cell: ExcelJS.Cell) => {
       if (cell.value == null) return ''
       if (cell.type === ExcelJS.ValueType.RichText)
@@ -66,25 +69,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       const Chave      = cellText(row.getCell(2))
       const Projeto    = cellText(row.getCell(3))
       const Prioridade = cellText(row.getCell(4))
-
-      const HorasResNum = Number(row.getCell(5).value) || 0
-      const SLANum      = Number(row.getCell(6).value) || 0
-      const SLAOK       = cellText(row.getCell(7)).toLowerCase() === 'true'
-
-      const toIso = (v: ExcelJS.CellValue) =>
-        v instanceof Date ? v.toISOString() : String(v || '')
-
-      const Criado    = toIso(row.getCell(8).value)
-      const Atualizado= toIso(row.getCell(9).value)
-      const Responsavel = cellText(row.getCell(10))
+      const HorasRes   = Number(row.getCell(5).value) || 0
+      const SLA        = Number(row.getCell(6).value) || 0
+      const SLAOK      = cellText(row.getCell(7)).toLowerCase() === 'true'
+      const toIso      = (v: any) => (v instanceof Date ? v.toISOString() : String(v || ''))
+      const Criado     = toIso(row.getCell(8).value)
+      const Atualizado = toIso(row.getCell(9).value)
+      const Responsavel= cellText(row.getCell(10))
 
       tickets.push({
         Tipo,
         Chave,
         Projeto,
         Prioridade,
-        'Horas Res.': HorasResNum,
-        'SLA (h)': SLANum,
+        'Horas Res.': HorasRes,
+        'SLA (h)': SLA,
         'SLA OK?': SLAOK,
         Criado,
         Atualizado,
@@ -92,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       })
     })
 
-    // 6) Envia array de tickets como JSON
+    // 6) Responde com o JSON
     return res.status(200).json(tickets)
   } catch (err: any) {
     console.error(err)
