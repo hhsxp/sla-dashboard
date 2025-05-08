@@ -9,11 +9,6 @@ export const config = {
   },
 }
 
-interface FormidableFiles {
-  /** nome do campo `file` no multipart/form-data */
-  file: FormidableFile
-}
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -22,51 +17,69 @@ export default async function handler(
     return res.status(405).json({ error: 'Método não permitido' })
   }
 
-  // 1) Parse do form-data via formidable
-  const form = new formidable.IncomingForm()
-  const { files } = await new Promise<{ files: FormidableFiles }>(
-    (resolve, reject) =>
-      form.parse(req, (err, _fields, files) =>
-        err ? reject(err) : resolve({ files: files as FormidableFiles })
-      )
-  )
-
-  // 2) Pega o arquivo enviado (FormidableFile)
-  const uploaded = files.file
-
-  // 3) Lê o Excel a partir do caminho no servidor
-  const workbook = new ExcelJS.Workbook()
-  await workbook.xlsx.readFile(uploaded.filepath)
-
-  // 4) Parse da aba "Tickets"
-  const ticketsSheet = workbook.getWorksheet('Tickets')
-  const tickets: Array<Partial<Record<string, any>>> = []
-  ticketsSheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return
-    tickets.push({
-      Tipo: row.getCell(1).value,
-      Chave: row.getCell(2).value,
-      // ... siga seu mapeamento conforme antes
+  // 1) Parse do multipart/form-data e extrai diretamente o FormidableFile
+  const file: FormidableFile = await new Promise((resolve, reject) => {
+    const form = new formidable.IncomingForm()
+    form.parse(req, (err, _fields, files) => {
+      if (err) return reject(err)
+      const f = files.file
+      // f pode ser um array ou um único file
+      if (Array.isArray(f)) {
+        resolve(f[0])
+      } else {
+        resolve(f as FormidableFile)
+      }
     })
   })
 
-  // 5) Parse de outras abas (exemplo "Base")
+  // 2) Lê o Excel a partir do caminho temporário no servidor
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.readFile(file.filepath)
+
+  // 3) Parse da aba "Tickets"
+  const ticketsSheet = workbook.getWorksheet('Tickets')
+  const tickets: any[] = []
+  ticketsSheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return // pula header
+    tickets.push({
+      Tipo:           row.getCell(1).value,
+      Chave:          row.getCell(2).value,
+      Resumo:         row.getCell(3).value,
+      Projeto:        row.getCell(4).value,
+      Unidade:        row.getCell(5).value,
+      Status:         row.getCell(6).value,
+      Relator:        row.getCell(7).value,
+      Prioridade:     row.getCell(8).value,
+      Atualizado:     row.getCell(9).value,
+      Criado:         row.getCell(10).value,
+      Responsavel:    row.getCell(11).value,
+      Tempo1aResp:    row.getCell(12).value,
+      TempoResolucao: row.getCell(13).value,
+      SLA_Horas:      row.getCell(14).value,
+      CumpriuPR:      row.getCell(15).value,
+    })
+  })
+
+  // 4) Parse da aba "Base" (ou outra)
   const baseSheet = workbook.getWorksheet('Base')
-  const baseData: Array<Partial<Record<string, any>>> = []
+  const baseData: any[] = []
   baseSheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return
     baseData.push({
-      Chave: row.getCell(2).value,
-      // ... etc
+      Chave:    row.getCell(2).value,
+      Horas_PR: row.getCell(6).value,
+      Flag_PR:  row.getCell(7).value,
+      Horas_RES: row.getCell(8).value,
+      Flag_RES:  row.getCell(9).value,
     })
   })
 
-  // 6) Merge dos dois arrays
+  // 5) Merge dos dois arrays
   const allData = tickets.map(t => ({
     ...t,
-    ...(baseData.find(b => b.Chave === t.Chave) || {}),
+    ...(baseData.find(b => b.Chave === t.Chave) || {})
   }))
 
-  // 7) Retorna o JSON processado
+  // 6) Retorna o JSON
   return res.status(200).json({ count: allData.length, data: allData })
 }
