@@ -4,13 +4,13 @@ import Head from 'next/head'
 import localforage from 'localforage'
 
 import { Header } from '../components/Header'
-import UploadDropzone from '../components/UploadDropzone'
+import { UploadDropzone } from '../components/UploadDropzone'  // <-- named import
 import TabsNav from '../components/TabsNav'
 import SlaBarChart from '../components/Charts/SlaBarChart'
 import TicketsPieChart from '../components/Charts/TicketsPieChart'
 import EffLineChart from '../components/Charts/EffLineChart'
 import RiskTimeline from '../components/Charts/RiskTimeline'
-import Footer from '../components/Footer'
+import { Footer } from '../components/Footer'
 
 import type { Version } from '../utils/storage'
 
@@ -35,10 +35,12 @@ export default function Home() {
   const [loaded, setLoaded] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
 
-  // ─── Carrega lista de versões na montagem ───────────────────
+  // ─── Carrega versões na montagem ───────────────────────────
   useEffect(() => {
     localforage.keys().then(keys => {
-      const vers = keys.filter(k => /^v\d+$/.test(k)).sort((a, b) => b.localeCompare(a))
+      const vers = keys
+        .filter(k => /^v\d+$/.test(k))
+        .sort((a, b) => b.localeCompare(a))
       setVersions(
         vers.map(id => ({
           id,
@@ -59,20 +61,21 @@ export default function Home() {
     })
   }, [currentVersion])
 
-  // ─── Filtro dos dados ───────────────────────────────────────
+  // ─── Filtra os dados ───────────────────────────────────────
   const filtered = data
     .filter(d => projectFilter === 'Todos' || d.Projeto === projectFilter)
     .filter(d => tribeFilter === 'Todas' || d.Tribo === tribeFilter)
 
-  // ─── Se ainda não há versão, mostra tela de upload full-screen ─
+  // ─── Se ainda sem versão, mostra upload full-screen ─────────
   if (!currentVersion) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-900 text-white">
         <UploadDropzone
           onComplete={async key => {
-            // recarrega versões e seleciona a nova
             const vers = await localforage.keys()
-            const v = vers.filter(k => /^v\d+$/.test(k)).sort((a, b) => b.localeCompare(a))
+            const v = vers
+              .filter(k => /^v\d+$/.test(k))
+              .sort((a, b) => b.localeCompare(a))
             setVersions(
               v.map(id => ({
                 id,
@@ -87,7 +90,7 @@ export default function Home() {
     )
   }
 
-  // ─── Se dados ainda estão carregando ────────────────────────
+  // ─── Se dados não carregaram ainda ────────────────────────
   if (!loaded) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-900 text-white">
@@ -111,14 +114,15 @@ export default function Home() {
         onUploadClick={() => setShowUpload(true)}
       />
 
-      {/* Overlay de Upload (botão flutuante) */}
+      {/* Modal de Upload */}
       {showUpload && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full">
-            <h2 className="text-white text-xl mb-4">Envie sua planilha SLA</h2>
+            <h2 className="text-white text-xl mb-4">
+              Envie sua planilha SLA
+            </h2>
             <UploadDropzone
               onComplete={async key => {
-                // recarrega versões e seleciona nova
                 const vers = await localforage.keys()
                 const v = vers
                   .filter(k => /^v\d+$/.test(k))
@@ -168,7 +172,9 @@ export default function Home() {
         </select>
         <select
           value={periodFilter}
-          onChange={e => setPeriodFilter(e.target.value as 'Mês' | 'Dia' | 'Ano')}
+          onChange={e =>
+            setPeriodFilter(e.target.value as 'Mês' | 'Dia' | 'Ano')
+          }
           className="bg-gray-700 px-3 py-1 rounded"
         >
           <option>Mês</option>
@@ -184,7 +190,7 @@ export default function Home() {
         onChange={setActiveTab}
       />
 
-      {/* Conteúdo das abas */}
+      {/* Conteúdo */}
       <div className="p-4 bg-gray-900 text-white space-y-6">
         {activeTab === 0 && (
           <>
