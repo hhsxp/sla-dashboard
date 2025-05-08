@@ -1,6 +1,6 @@
 // pages/api/upload.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
-import formidable, { File as FormidableFile } from 'formidable'
+import formidable from 'formidable'
 import ExcelJS from 'exceljs'
 
 export const config = {
@@ -17,30 +17,28 @@ export default async function handler(
     return res.status(405).json({ error: 'Método não permitido' })
   }
 
-  // 1) Parse do multipart/form-data e extrai diretamente o FormidableFile
-  const file: FormidableFile = await new Promise((resolve, reject) => {
+  // 1) Parse multipart/form-data
+  const file = await new Promise<formidable.File>((resolve, reject) => {
     const form = new formidable.IncomingForm()
     form.parse(req, (err, _fields, files) => {
       if (err) return reject(err)
       const f = files.file
-      // f pode ser um array ou um único file
-      if (Array.isArray(f)) {
-        resolve(f[0])
-      } else {
-        resolve(f as FormidableFile)
-      }
+      if (Array.isArray(f)) resolve(f[0])
+      else resolve(f as formidable.File)
     })
   })
 
-  // 2) Lê o Excel a partir do caminho temporário no servidor
+  // 2) Lê o Excel via ExcelJS
   const workbook = new ExcelJS.Workbook()
-  await workbook.xlsx.readFile(file.filepath)
+  // ⚠️ aqui fazemos cast a any para pegar o filepath real
+  const tmpPath = (file as any).filepath
+  await workbook.xlsx.readFile(tmpPath)
 
   // 3) Parse da aba "Tickets"
   const ticketsSheet = workbook.getWorksheet('Tickets')
   const tickets: any[] = []
   ticketsSheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return // pula header
+    if (rowNumber === 1) return
     tickets.push({
       Tipo:           row.getCell(1).value,
       Chave:          row.getCell(2).value,
@@ -60,7 +58,7 @@ export default async function handler(
     })
   })
 
-  // 4) Parse da aba "Base" (ou outra)
+  // 4) Parse da aba "Base"
   const baseSheet = workbook.getWorksheet('Base')
   const baseData: any[] = []
   baseSheet.eachRow((row, rowNumber) => {
@@ -74,12 +72,12 @@ export default async function handler(
     })
   })
 
-  // 5) Merge dos dois arrays
+  // 5) Merge
   const allData = tickets.map(t => ({
     ...t,
     ...(baseData.find(b => b.Chave === t.Chave) || {})
   }))
 
-  // 6) Retorna o JSON
+  // 6) Retorno
   return res.status(200).json({ count: allData.length, data: allData })
 }
