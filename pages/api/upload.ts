@@ -1,125 +1,94 @@
 // pages/api/upload.ts
-import type { NextApiRequest, NextApiResponse } from 'next'
-import formidable from 'formidable'
-import ExcelJS from 'exceljs'
+import type { NextApiRequest, NextApiResponse } from 'next';
+import formidable from 'formidable';
+import ExcelJS from 'exceljs';
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // precisa ser false para upload de binário via formidable
   },
+};
+
+interface Ticket {
+  TipoItem: string;
+  Chave: string;
+  Resumo: string;
+  Prioridade: string;
+  Criado: string;
+  Atualizado: string;
+  Resolvido: string;
 }
 
-type Ticket = {
-  TipoItem: string
-  Chave: string
-  Resumo: string
-  Projeto: string
-  UnidadeNegocio: string
-  Prioridade: string
-  Criado: string
-  Atualizado: string
-  Resolvido: string
-  TempoPR: number
-  TempoRES: number
-  HorasPR: number
-  FlagPR: boolean
-  HorasRES: number
-  FlagRES: boolean
+interface BaseInfo {
+  UnidadeNegocio: string;
+  Tribo: string;
+  SLA_Horas: number;
+  // adicione aqui outras colunas da aba Base que quiser
 }
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Ticket[] | { error: string }>,
+  res: NextApiResponse<any>
 ) {
   try {
-    // 1) Parses multipart/form-data
-    const form = new formidable.IncomingForm()
-    const [, files] = await new Promise<
-      [formidable.Fields, formidable.Files]
-    >((resolve, reject) =>
-      form.parse(req, (err, fields, files) =>
-        err ? reject(err) : resolve([fields, files]),
-      ),
-    )
-    const file = (files.file as formidable.File)
+    // 1) Parse do form + upload
+    const form = new formidable.IncomingForm();
+    const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        else resolve([fields, files]);
+      });
+    });
 
-    // formidable v2 pode usar .filepath ou .path
-    const tempPath = (file as any).filepath ?? (file as any).path
-    if (!tempPath) throw new Error('Arquivo não recebido corretamente.')
+    const file = files.file as formidable.File;  // seu input name="file"
+    if (!file.filepath) throw new Error('Não recebi o arquivo corretamente.');
 
-    // 2) Lê o Excel
-    const workbook = new ExcelJS.Workbook()
-    await workbook.xlsx.readFile(tempPath)
+    // 2) Carrega o workbook
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(file.filepath);
 
-    // 3) Monta um mapa a partir da aba "Base"
-    const baseSheet = workbook.getWorksheet('Base')
-    const baseMap = new Map<
-      string,
-      { TempoPR: number; TempoRES: number; HorasPR: number; FlagPR: boolean; HorasRES: number; FlagRES: boolean }
-    >()
+    // 3) Lê a aba "Base" e monta um map { [Chave]: BaseInfo }
+    const baseSheet = workbook.getWorksheet('Base');
+    const baseMap: Record<string, BaseInfo> = {};
+    baseSheet.eachRow((row, rowNum) => {
+      if (rowNum === 1) return; // pula cabeçalho
+      const chave = row.getCell(2).text.trim();           // coluna B
+      const unidade = row.getCell(3).text.trim();         // coluna C
+      const tribo = row.getCell(4).text.trim();           // coluna D
+      const slaHoras = parseFloat(row.getCell(5).text);   // coluna E
+      baseMap[chave] = {
+        UnidadeNegocio: unidade,
+        Tribo: tribo,
+        SLA_Horas: slaHoras,
+      };
+    });
 
-    baseSheet.eachRow((row: any, rowNum: number) => {
-      if (rowNum === 1) return
-      const tipo    = row.getCell(1).text.trim()
-      const chave   = row.getCell(2).text.trim()
-      const key     = `${tipo}#${chave}`
+    // 4) Lê a aba "Tickets" e faz o merge com baseMap
+    const ticketsSheet = workbook.getWorksheet('Tickets');
+    const merged: Array<Ticket & BaseInfo> = [];
+    ticketsSheet.eachRow((row, rowNum) => {
+      if (rowNum === 1) return; // pula cabeçalho
+      const ticket: Ticket = {
+        TipoItem: row.getCell(1).text,
+        Chave: row.getCell(2).text,
+        Resumo: row.getCell(3).text,
+        Prioridade: row.getCell(4).text,
+        Criado: row.getCell(5).text,
+        Atualizado: row.getCell(6).text,
+        Resolvido: row.getCell(7).text,
+      };
+      const info = baseMap[ticket.Chave] || {
+        UnidadeNegocio: '—',
+        Tribo: '—',
+        SLA_Horas: 0,
+      };
+      merged.push({ ...ticket, ...info });
+    });
 
-      const TempoPR  = parseFloat(row.getCell(14).text) || 0
-      const TempoRES = parseFloat(row.getCell(15).text) || 0
-      const HorasPR  = parseFloat(row.getCell(16).text) || 0
-      const FlagPR   = row.getCell(17).text.toLowerCase() === 'true'
-      const HorasRES = parseFloat(row.getCell(18).text) || 0
-      const FlagRES  = row.getCell(19).text.toLowerCase() === 'true'
-
-      baseMap.set(key, { TempoPR, TempoRES, HorasPR, FlagPR, HorasRES, FlagRES })
-    })
-
-    // 4) Processa a aba "Tickets" cruzando com o mapa
-    const ticketsSheet = workbook.getWorksheet('Tickets')
-    const tickets: Ticket[] = []
-
-    ticketsSheet.eachRow((row: any, rowNum: number) => {
-      if (rowNum === 1) return
-      const TipoItem       = row.getCell(1).text.trim()
-      const Chave          = row.getCell(2).text.trim()
-      const Resumo         = row.getCell(3).text.trim()
-      const Projeto        = row.getCell(4).text.trim()
-      const UnidadeNegocio = row.getCell(5).text.trim()
-      const Prioridade     = row.getCell(8).text.trim()
-      const Criado         = (row.getCell(9).value as Date)?.toISOString() || ''
-      const Atualizado     = (row.getCell(10).value as Date)?.toISOString() || ''
-      const Resolvido      = (row.getCell(11).value as Date)?.toISOString() || ''
-
-      const key = `${TipoItem}#${Chave}`
-      const base = baseMap.get(key) || {
-        TempoPR: 0, TempoRES: 0,
-        HorasPR: 0, FlagPR: false,
-        HorasRES: 0, FlagRES: false,
-      }
-
-      tickets.push({
-        TipoItem,
-        Chave,
-        Resumo,
-        Projeto,
-        UnidadeNegocio,
-        Prioridade,
-        Criado,
-        Atualizado,
-        Resolvido,
-        TempoPR: base.TempoPR,
-        TempoRES: base.TempoRES,
-        HorasPR: base.HorasPR,
-        FlagPR: base.FlagPR,
-        HorasRES: base.HorasRES,
-        FlagRES: base.FlagRES,
-      })
-    })
-
-    // 5) Retorna o array de tickets
-    res.status(200).json(tickets)
+    // 5) Retorna JSON já cruzado
+    res.status(200).json(merged);
   } catch (err: any) {
-    console.error(err)
-    res.status(500).json({ error: err.message })
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 }
