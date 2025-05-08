@@ -3,13 +3,13 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import localforage from 'localforage'
 
-// Components que exportam como named
+// Named exports
 import { Header } from '../components/Header'
 import { UploadDropzone } from '../components/UploadDropzone'
 import { TabsNav } from '../components/TabsNav'
 import { Footer } from '../components/Footer'
 
-// Charts que exportam como default
+// Default exports (Charts)
 import SlaBarChart from '../components/Charts/SlaBarChart'
 import TicketsPieChart from '../components/Charts/TicketsPieChart'
 import EffLineChart from '../components/Charts/EffLineChart'
@@ -17,15 +17,16 @@ import RiskTimeline from '../components/Charts/RiskTimeline'
 
 import type { Version } from '../utils/storage'
 
-const TAB_NAMES = [
+// Agora TAB_NAMES é string[], não readonly
+const TAB_NAMES: string[] = [
   'Visão Geral',
   'Desempenho SLA',
   'Tempos e Status',
   'Dados Detalhados',
-] as const
+]
 
 export default function Home() {
-  // ─── Hooks sempre no topo ────────────────────────────
+  // ─── Todos os hooks no topo ────────────────────────────
   const [versions, setVersions] = useState<Version[]>([])
   const [currentVersion, setCurrentVersion] = useState<string | null>(null)
   const [data, setData] = useState<any[]>([])
@@ -63,7 +64,7 @@ export default function Home() {
   const filtered = data
     .filter(d => projectFilter === 'Todos' || d.Projeto === projectFilter)
     .filter(d => tribeFilter === 'Todas' || d.Tribo === tribeFilter)
-    // adicione mais filtros conforme precisar
+    // acrescente outros filtros se precisar
 
   // ─── Retornos condicionais após os hooks ──────────────
   if (!loaded) {
@@ -72,11 +73,9 @@ export default function Home() {
         {!currentVersion ? (
           <UploadDropzone
             onComplete={async key => {
-              // após upload, recarrega a lista de versões
+              // após upload, recarrega versões
               const vers = await localforage.keys()
-              const v = vers
-                .filter(k => /^v\d+$/.test(k))
-                .sort((a, b) => b.localeCompare(a))
+              const v = vers.filter(k => /^v\d+$/.test(k)).sort((a, b) => b.localeCompare(a))
               setVersions(
                 v.map(id => ({
                   id,
@@ -107,7 +106,7 @@ export default function Home() {
         onSelect={setCurrentVersion}
       />
 
-      {/* Filtros de projeto, tribo e período */}
+      {/* Filtros */}
       <div className="flex space-x-4 p-4 bg-gray-800 text-white">
         <select
           value={projectFilter}
