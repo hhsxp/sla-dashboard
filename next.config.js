@@ -1,8 +1,7 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',      // ativa a exportação estática
-  reactStrictMode: true, // opcional
+  reactStrictMode: true,
+  // retire qualquer swcMinify ou output: 'export'
 };
 
 module.exports = nextConfig;
