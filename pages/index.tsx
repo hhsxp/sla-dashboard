@@ -3,14 +3,17 @@ import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import localforage from 'localforage'
 
+// Named exports
 import { Header } from '../components/Header'
-import { UploadDropzone } from '../components/UploadDropzone'  // <-- named import
-import TabsNav from '../components/TabsNav'
+import { UploadDropzone } from '../components/UploadDropzone'
+import { TabsNav } from '../components/TabsNav'
+import { Footer } from '../components/Footer'
+
+// Charts (default exports)
 import SlaBarChart from '../components/Charts/SlaBarChart'
 import TicketsPieChart from '../components/Charts/TicketsPieChart'
 import EffLineChart from '../components/Charts/EffLineChart'
 import RiskTimeline from '../components/Charts/RiskTimeline'
-import { Footer } from '../components/Footer'
 
 import type { Version } from '../utils/storage'
 
@@ -190,7 +193,7 @@ export default function Home() {
         onChange={setActiveTab}
       />
 
-      {/* Conteúdo */}
+      {/* Conteúdo das abas */}
       <div className="p-4 bg-gray-900 text-white space-y-6">
         {activeTab === 0 && (
           <>
