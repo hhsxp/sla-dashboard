@@ -14,12 +14,16 @@
     "exceljs": "^4.3.0",
     "formidable-serverless": "^1.1.1",
     "localforage": "^1.10.0",
-    "recharts": "^2.6.2"
+    "recharts": "^2.6.2",
+    "@tanstack/react-table": "^8.8.4",
+    "file-saver": "^2.0.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "typescript": "^5.1.6",
     "@types/node": "^18.16.18",
     "@types/react": "^18.2.15",
-    "@types/react-dom": "^18.2.6"
+    "@types/react-dom": "^18.2.6",
+    "@types/file-saver": "^2.0.5"
   }
 }
