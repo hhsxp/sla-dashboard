@@ -36,3 +36,11 @@ export async function parseExcel(file: File): Promise<Ticket[]> {
     auxilio:       parseFloat(row['Auxilio'] || '0'),
   }));
 }
+export function groupByAnalyst(tickets: Ticket[]) {
+  return tickets.reduce<Record<string, Ticket[]>>((acc, t) => {
+    const key = t.responsavel || '—';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(t);
+    return acc;
+  }, {});
+}
