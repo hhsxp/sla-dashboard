@@ -1,4 +1,3 @@
-// src/pages/Dashboard.tsx
 import React, { useState, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
 import Select, { MultiValue } from 'react-select';
@@ -24,43 +23,44 @@ const tabOptions = [
 
 export default function Dashboard() {
   const [data, setData] = useState<Ticket[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTab] = = useState<'overview'|'porCliente'|'porAnalista'>('overview');
   const { filters, dispatch } = useFilters();
 
-  // 1) upload da planilha
+  // 1) Upload & parse
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     const parsed = await parseExcel(e.target.files[0]);
+    console.log('parsed tickets:', parsed); // <— debug in console
     setData(parsed);
   };
 
-  // 2) opções de filtro
-  const projetoOptions = useMemo<Option[]>(() => {
-    return Array.from(new Set(data.map(d => d.cliente)))
-      .map(c => ({ value: c, label: c }));
-  }, [data]);
+  // 2) Build filter options
+  const projetoOptions = useMemo<Option[]>(() => 
+    Array.from(new Set(data.map(d => d.cliente)))
+         .map(c => ({ value: c, label: c }))
+  ,[data]);
 
-  const unidadeOptions = useMemo<Option[]>(() => {
-    return Array.from(new Set(data.map(d => d.tribo)))
-      .map(t => ({ value: t, label: t }));
-  }, [data]);
+  const unidadeOptions = useMemo<Option[]>(() => 
+    Array.from(new Set(data.map(d => d.tribo)))
+         .map(t => ({ value: t, label: t }))
+  ,[data]);
 
-  const analistaOptions = useMemo<Option[]>(() => {
-    return Array.from(new Set(data.map(d => d.responsavel || '')))
-      .map(a => ({ value: a, label: a }));
-  }, [data]);
+  const analistaOptions = useMemo<Option[]>(() => 
+    Array.from(new Set(data.map(d => d.responsavel || '')))
+         .map(a => ({ value: a, label: a }))
+  ,[data]);
 
-  // 3) aplicação dos filtros (agora com 'vencimentos' e 'responsavel')
-  const filtered = useMemo(() => {
-    return data
+  // 3) Apply filters (now using `vencimentos` & `responsavel`)
+  const filtered = useMemo(() => 
+    data
       .filter(t => !filters.dateFrom || (t.vencimentos ?? new Date()) >= filters.dateFrom!)
       .filter(t => !filters.dateTo   || (t.vencimentos ?? new Date()) <= filters.dateTo!)
       .filter(t => !filters.projetos.length || filters.projetos.includes(t.cliente))
       .filter(t => !filters.unidades.length || filters.unidades.includes(t.tribo))
-      .filter(t => !filters.analistas.length || filters.analistas.includes(t.responsavel || ''));
-  }, [data, filters]);
+      .filter(t => !filters.analistas.length || filters.analistas.includes(t.responsavel!))
+  ,[data, filters]);
 
-  // 4) métricas de SLA
+  // 4) SLA KPIs
   const slaStats = calcSlaStats(filtered);
 
   return (
@@ -114,10 +114,10 @@ export default function Dashboard() {
       </header>
 
       <section className="dashboard__kpis">
-        <KpiCard title="Total Tickets"  value={filtered.length} />
-        <KpiCard title="SLA Atingido"   value={slaStats.atingidos} />
-        <KpiCard title="SLA Violado"    value={slaStats.violados} />
-        <KpiCard title="% Atingimento"  value={slaStats.pctAtingimento.toFixed(1) + '%'} />
+        <KpiCard title="Total Tickets"   value={filtered.length} />
+        <KpiCard title="SLA Atingido"    value={slaStats.atingidos} />
+        <KpiCard title="SLA Violado"     value={slaStats.violados} />
+        <KpiCard title="% Atingimento"   value={slaStats.pctAtingimento.toFixed(1) + '%'} />
       </section>
 
       <nav className="dashboard__tabs">
@@ -125,7 +125,7 @@ export default function Dashboard() {
           <button
             key={tab.value}
             className={activeTab === tab.value ? 'active' : ''}
-            onClick={() => setActiveTab(tab.value)}
+            onClick={() => setActiveTab(tab.value as any)}
           >
             {tab.label}
           </button>
