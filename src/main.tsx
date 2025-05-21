@@ -2,7 +2,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
-// registrar todos os componentes do Chart.js antes de qualquer uso de gráfico
+// importa DEPOIS do React e ANTES de qualquer gráfico,
+// para garantir que Chart.js já esteja configurado
 import './chartjs';
 
 import App from './App';
