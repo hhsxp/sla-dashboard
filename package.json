@@ -1,28 +1,25 @@
 {
   "name": "sla-dashboard",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
+  "version": "1.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "chart.js": "^4.4.1",
-    "file-saver": "^2.0.5",
-    "localforage": "^1.10.0",
     "react": "^18.2.0",
-    "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",
-    "xlsx": "^0.18.5"
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0",
+    "xlsx": "^0.18.19",
+    "lodash": "^4.17.21",
+    "react-datepicker": "^4.15.0",
+    "react-select": "^5.7.0",
+    "react-table": "^8.8.0"
   },
   "devDependencies": {
-    "@types/file-saver": "^2.0.7",
-    "@types/react": "^18.2.43",
-    "@types/react-dom": "^18.2.17",
-    "@vitejs/plugin-react": "^4.2.1",
-    "typescript": "^5.2.2",
-    "vite": "^5.0.8"
+    "typescript": "^5.1.6",
+    "vite": "^4.3.9",
+    "@vitejs/plugin-react": "^4.0.0"
   }
 }
