@@ -1,4 +1,3 @@
-// src/utils/data.ts
 import * as XLSX from 'xlsx';
 
 export interface Ticket {
@@ -9,9 +8,9 @@ export interface Ticket {
   horas: number;
   valorHora: number;
   valor: number;
-  vencimentos?: Date;     // agora incluímos vencimentos
+  vencimentos?: Date;
   apontamentos: number;
-  responsavel?: string;
+  responsavel?: string;   // agora sim mapeamos!
   auxilio?: number;
 }
 
@@ -31,7 +30,7 @@ export async function parseExcel(file: File): Promise<Ticket[]> {
     valor:        parseFloat(row['Valor']     || '0'),
     vencimentos:  row['Vencimentos'] ? new Date(row['Vencimentos']) : undefined,
     apontamentos: parseFloat(row['Apontamentos']|| '0'),
-    responsavel:  row['Auxilio'] ? String(row['Auxilio']) : undefined, // se Auxilio for analista?
+    responsavel:  row['Responsável']  || row['Analista'] || undefined,
     auxilio:      parseFloat(row['Auxilio']  || '0'),
   }));
 }
