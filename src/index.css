@@ -1,0 +1,5 @@
+body { margin: 0; font-family: Arial, sans-serif; background: #121212; color: #fff; }
+.kpis { display: flex; gap: 1rem; padding: 1rem; }
+.kpi-card { flex: 1; background: #1e1e1e; padding: 1rem; border-radius: 8px; text-align: center; }
+.charts { display: flex; gap: 1rem; padding: 1rem; }
+.dashboard header { padding: 1rem; }
