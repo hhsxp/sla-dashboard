@@ -1,7 +1,7 @@
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Ticket } from '../types';
-import { groupByAnalyst } from '../utils/data';
+import { Ticket, groupByAnalyst } from '../utils/data';  
 interface Props { tickets: Ticket[]; }
 const ChartSlaByAnalyst: React.FC<Props> = ({ tickets }) => {
   const grouped = groupByAnalyst(tickets);
