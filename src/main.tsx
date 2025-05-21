@@ -1,5 +1,10 @@
+// src/main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+
+// registrar todos os componentes do Chart.js antes de qualquer uso de gráfico
+import './chartjs';
+
 import App from './App';
 import './index.css';
 
