@@ -1,15 +1,41 @@
 import React from 'react';
 import { Bar } from 'react-chartjs-2';
-import { Ticket } from '../types';
-import { Ticket, groupByAnalyst } from '../utils/data';  
-interface Props { tickets: Ticket[]; }
-const ChartSlaByAnalyst: React.FC<Props> = ({ tickets }) => {
-  const grouped = groupByAnalyst(tickets);
+import { Ticket, groupByAnalyst, calcSlaStats } from '../utils/data';
+
+interface Props {
+  data: Ticket[];
+}
+
+export default function ChartSlaByAnalyst({ data }: Props) {
+  const grouped = groupByAnalyst(data);
   const analistas = Object.keys(grouped);
-  const atingidos = analistas.map(a => grouped[a].filter(t => t.sla === 'Atingido').length);
-  const violados = analistas.map(a => grouped[a].filter(t => t.sla === 'Violado').length);
-  const data = { labels: analistas, datasets: [{ label: 'Atingido', data: atingidos },{ label: 'Violado', data: violados }] };
-  const options = { scales: { x: { stacked: true }, y: { stacked: true } } };
-  return <Bar data={data} options={options} />;
-};
-export default ChartSlaByAnalyst;
+
+  // para cada analista, usa calcSlaStats para obter atingidos/violados
+  const atingidos = analistas.map(a => calcSlaStats(grouped[a]).atingidos);
+  const violados  = analistas.map(a => calcSlaStats(grouped[a]).violados);
+
+  const chartData = {
+    labels: analistas,
+    datasets: [
+      { label: 'Atingido', data: atingidos },
+      { label: 'Violado',  data: violados }
+    ]
+  };
+
+  const options = {
+    maintainAspectRatio: false,
+    scales: {
+      x: { stacked: true, ticks: { color: '#fff' } },
+      y: { stacked: true, beginAtZero: true, ticks: { color: '#fff' } }
+    },
+    plugins: {
+      legend: { labels: { color: '#fff' } }
+    }
+  };
+
+  return (
+    <div style={{ height: 300, width: '100%' }}>
+      <Bar data={chartData} options={options} />
+    </div>
+  );
+}
