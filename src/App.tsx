@@ -1,13 +1,11 @@
 import React from 'react';
-import Dashboard from './components/Dashboard';
-import './styles.css';
+import { FiltersProvider } from './contexts/FiltersContext';
+import Dashboard from './pages/Dashboard';
 
-function App() {
+export default function App() {
   return (
-    <div className="app">
+    <FiltersProvider>
       <Dashboard />
-    </div>
+    </FiltersProvider>
   );
 }
-
-export default App;
