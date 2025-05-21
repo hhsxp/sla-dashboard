@@ -1,5 +1,45 @@
-.dashboard .charts {
+.dashboard__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.dashboard__filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dashboard__kpis {
   display: flex;
   gap: 1rem;
   padding: 1rem;
+}
+
+.dashboard__tabs {
+  display: flex;
+  gap: 1rem;
+  padding: 0 1rem;
+}
+
+.dashboard__tabs button {
+  background: none;
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.dashboard__tabs button.active {
+  border-bottom: 2px solid #fff;
+}
+
+.dashboard__content {
+  padding: 1rem;
+}
+
+.dashboard__charts {
+  display: flex;
+  gap: 1rem;
 }
