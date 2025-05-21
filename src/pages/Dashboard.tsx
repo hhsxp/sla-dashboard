@@ -1,3 +1,4 @@
+// src/pages/Dashboard.tsx
 import React, { useState, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
 import Select from 'react-select';
@@ -33,28 +34,28 @@ export default function Dashboard() {
 
   // Opções para os selects a partir dos dados carregados
   const projetoOptions = useMemo(() => {
-    return Array.from(new Set(data.map(d => d.projeto)))
-      .map(p => ({ value: p, label: p }));
+    return Array.from(new Set(data.map(d => d.cliente)))
+      .map(c => ({ value: c, label: c }));
   }, [data]);
 
   const unidadeOptions = useMemo(() => {
-    return Array.from(new Set(data.map(d => d.unidade)))
-      .map(u => ({ value: u, label: u }));
+    return Array.from(new Set(data.map(d => d.tribo)))
+      .map(t => ({ value: t, label: t }));
   }, [data]);
 
   const analistaOptions = useMemo(() => {
-    return Array.from(new Set(data.map(d => d.responsavel)))
+    return Array.from(new Set(data.map(d => d.responsavel || '')))
       .map(a => ({ value: a, label: a }));
   }, [data]);
 
   // Aplica filtros
   const filtered = useMemo(() => {
     return data
-      .filter(t => !filters.dateFrom || t.criado >= filters.dateFrom)
-      .filter(t => !filters.dateTo   || t.criado <= filters.dateTo)
-      .filter(t => !filters.projetos.length || filters.projetos.includes(t.projeto))
-      .filter(t => !filters.unidades.length || filters.unidades.includes(t.unidade))
-      .filter(t => !filters.analistas.length || filters.analistas.includes(t.responsavel));
+      .filter(t => !filters.dateFrom || (t.criado ?? new Date()) >= filters.dateFrom)
+      .filter(t => !filters.dateTo   || (t.criado ?? new Date()) <= filters.dateTo)
+      .filter(t => !filters.projetos.length || filters.projetos.includes(t.cliente))
+      .filter(t => !filters.unidades.length || filters.unidades.includes(t.tribo))
+      .filter(t => !filters.analistas.length || filters.analistas.includes(t.responsavel || ''));
   }, [data, filters]);
 
   // Calcula métricas de SLA
@@ -98,8 +99,8 @@ export default function Dashboard() {
 
       <section className="dashboard__kpis">
         <KpiCard title="Total Tickets" value={filtered.length} />
-        <KpiCard title="SLA Atingido" value={slaStats.atingidos} />
-        <KpiCard title="SLA Violado" value={slaStats.violados} />
+        <KpiCard title="SLA Atingido"  value={slaStats.atingidos} />
+        <KpiCard title="SLA Violado"   value={slaStats.violados} />
         <KpiCard title="% Atingimento" value={slaStats.pctAtingimento.toFixed(1) + '%'} />
       </section>
 
