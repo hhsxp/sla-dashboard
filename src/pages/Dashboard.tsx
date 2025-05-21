@@ -27,14 +27,14 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const { filters, dispatch } = useFilters();
 
-  // quando o usuário faz upload do .xlsx
+  // Lê e transforma a planilha
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     const parsed = await parseExcel(e.target.files[0]);
     setData(parsed);
   };
 
-  // constrói as opções de filtro a partir dos dados
+  // Gera opções para os selects
   const projetoOptions = useMemo<Option[]>(() => {
     return Array.from(new Set(data.map(d => d.cliente)))
       .map(c => ({ value: c, label: c }));
@@ -50,7 +50,7 @@ export default function Dashboard() {
       .map(a => ({ value: a, label: a }));
   }, [data]);
 
-  // aplica os filtros
+  // Aplica filtros ao conjunto de dados
   const filtered = useMemo(() => {
     return data
       .filter(t => !filters.dateFrom || (t.criado ?? new Date()) >= filters.dateFrom)
@@ -60,7 +60,7 @@ export default function Dashboard() {
       .filter(t => !filters.analistas.length || filters.analistas.includes(t.responsavel || ''));
   }, [data, filters]);
 
-  // métricas de SLA
+  // Calcula KPI de SLA
   const slaStats = calcSlaStats(filtered);
 
   return (
@@ -114,10 +114,10 @@ export default function Dashboard() {
       </header>
 
       <section className="dashboard__kpis">
-        <KpiCard title="Total Tickets"  value={filtered.length} />
-        <KpiCard title="SLA Atingido"   value={slaStats.atingidos} />
-        <KpiCard title="SLA Violado"    value={slaStats.violados} />
-        <KpiCard title="% Atingimento"  value={slaStats.pctAtingimento.toFixed(1) + '%'} />
+        <KpiCard title="Total Tickets" value={filtered.length} />
+        <KpiCard title="SLA Atingido"  value={slaStats.atingidos} />
+        <KpiCard title="SLA Violado"   value={slaStats.violados} />
+        <KpiCard title="% Atingimento" value={slaStats.pctAtingimento.toFixed(1) + '%'} />
       </section>
 
       <nav className="dashboard__tabs">
@@ -143,7 +143,7 @@ export default function Dashboard() {
           <ChartDistribPorCliente data={filtered} />
         )}
         {activeTab === 'porAnalista' && (
-          <ChartSlaByAnalyst tickets={filtered} />
+          <ChartSlaByAnalyst data={filtered} />
         )}
       </section>
     </div>
