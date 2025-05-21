@@ -17,9 +17,9 @@ import './Dashboard.css';
 type Option = { value: string; label: string; };
 
 const tabOptions = [
-  { value: 'overview', label: 'Visão Geral' },
+  { value: 'overview',   label: 'Visão Geral' },
   { value: 'porCliente', label: 'Por Cliente' },
-  { value: 'porAnalista', label: 'Por Analista' }
+  { value: 'porAnalista',label: 'Por Analista' }
 ];
 
 export default function Dashboard() {
@@ -27,14 +27,14 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const { filters, dispatch } = useFilters();
 
-  // Lê e transforma a planilha
+  // Upload e parse da planilha
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     const parsed = await parseExcel(e.target.files[0]);
     setData(parsed);
   };
 
-  // Gera opções para os selects
+  // Opções de filtro
   const projetoOptions = useMemo<Option[]>(() => {
     return Array.from(new Set(data.map(d => d.cliente)))
       .map(c => ({ value: c, label: c }));
@@ -50,17 +50,17 @@ export default function Dashboard() {
       .map(a => ({ value: a, label: a }));
   }, [data]);
 
-  // Aplica filtros ao conjunto de dados
+  // Aplica filtros (agora usando vencimentos)
   const filtered = useMemo(() => {
     return data
-      .filter(t => !filters.dateFrom || (t.criado ?? new Date()) >= filters.dateFrom)
-      .filter(t => !filters.dateTo   || (t.criado ?? new Date()) <= filters.dateTo)
+      .filter(t => !filters.dateFrom || (t.vencimentos ?? new Date()) >= filters.dateFrom)
+      .filter(t => !filters.dateTo   || (t.vencimentos ?? new Date()) <= filters.dateTo)
       .filter(t => !filters.projetos.length || filters.projetos.includes(t.cliente))
       .filter(t => !filters.unidades.length || filters.unidades.includes(t.tribo))
       .filter(t => !filters.analistas.length || filters.analistas.includes(t.responsavel || ''));
   }, [data, filters]);
 
-  // Calcula KPI de SLA
+  // KPI de SLA
   const slaStats = calcSlaStats(filtered);
 
   return (
@@ -69,7 +69,7 @@ export default function Dashboard() {
         <input type="file" accept=".xlsx" onChange={handleFile} />
         <div className="dashboard__filters">
           <DatePicker
-            placeholderText="Data de..."
+            placeholderText="Data de Vencimentos de..."
             selected={filters.dateFrom}
             onChange={d => dispatch({ type: 'SET_DATE_FROM', payload: d || undefined })}
             isClearable
@@ -81,7 +81,7 @@ export default function Dashboard() {
             isClearable
           />
           <Select<Option, true>
-            placeholder="Projetos"
+            placeholder="Projetos (Cliente)"
             isMulti
             isClearable
             options={projetoOptions}
@@ -91,7 +91,7 @@ export default function Dashboard() {
             }
           />
           <Select<Option, true>
-            placeholder="Unidades"
+            placeholder="Unidades (Tribo)"
             isMulti
             isClearable
             options={unidadeOptions}
@@ -114,10 +114,10 @@ export default function Dashboard() {
       </header>
 
       <section className="dashboard__kpis">
-        <KpiCard title="Total Tickets" value={filtered.length} />
-        <KpiCard title="SLA Atingido"  value={slaStats.atingidos} />
-        <KpiCard title="SLA Violado"   value={slaStats.violados} />
-        <KpiCard title="% Atingimento" value={slaStats.pctAtingimento.toFixed(1) + '%'} />
+        <KpiCard title="Total Tickets"   value={filtered.length} />
+        <KpiCard title="SLA Atingido"    value={slaStats.atingidos} />
+        <KpiCard title="SLA Violado"     value={slaStats.violados} />
+        <KpiCard title="% Atingimento"   value={slaStats.pctAtingimento.toFixed(1) + '%'} />
       </section>
 
       <nav className="dashboard__tabs">
