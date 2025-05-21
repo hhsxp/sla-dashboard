@@ -1,0 +1,222 @@
+/* Importar fontes Poppins */
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+/* Estilos globais */
+:root {
+  --primary-color: #0d6efd;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --dark-bg: #111;
+  --card-bg: #222;
+  --table-header-bg: #0d6efd;
+  --table-row-even: #333;
+  --table-row-odd: #444;
+  --text-color: #fff;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', Arial, sans-serif;
+  background-color: var(--dark-bg);
+  color: var(--text-color);
+}
+
+/* Estilos do Dashboard */
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.dashboard-header h1 {
+  color: var(--primary-color);
+  margin: 0;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 0 1.5rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Seção de Upload */
+.upload-section {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.upload-form h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.file-input {
+  background-color: #333;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  width: 100%;
+  border: none;
+}
+
+.error-message {
+  background-color: var(--danger-color);
+  color: white;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+/* Métricas */
+.metrics-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.metric-card {
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.metric-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.total-projects {
+  background-color: var(--success-color);
+}
+
+.total-hours {
+  background-color: var(--primary-color);
+}
+
+.total-value {
+  background-color: var(--danger-color);
+}
+
+/* Gráficos */
+.charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.chart-container {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.chart-container h3 {
+  margin-top: 0;
+}
+
+.chart-wrapper {
+  height: 300px;
+}
+
+/* Tabela */
+.table-section {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.table-header h3 {
+  margin: 0;
+}
+
+.export-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+
+.data-table th {
+  background-color: var(--table-header-bg);
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 2px solid #333;
+}
+
+.data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #333;
+}
+
+.even-row {
+  background-color: var(--table-row-even);
+}
+
+.odd-row {
+  background-color: var(--table-row-odd);
+}
+
+/* Footer */
+.dashboard-footer {
+  text-align: center;
+  padding: 1rem;
+  background-color: var(--card-bg);
+  margin-top: auto;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+}
