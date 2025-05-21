@@ -12,14 +12,15 @@ import {
   Legend
 } from 'chart.js';
 
+// registra todos os componentes que vamos usar nos <Bar /> e <Pie />
 ChartJS.register(
-  CategoryScale,    // eixo X para barras/linhas
-  LinearScale,      // eixo Y
-  BarElement,       // elementos de barras
-  ArcElement,       // elementos de pizza (Pie)
-  PointElement,     // pontos em linha
-  LineElement,      // linhas
-  Title,            // título
-  Tooltip,          // tooltip
-  Legend            // legenda
+  CategoryScale,   // escala do eixo X
+  LinearScale,     // escala do eixo Y
+  BarElement,      // barras
+  ArcElement,      // fatias de pizza
+  PointElement,    // pontos de linha
+  LineElement,     // linhas
+  Title,           // título
+  Tooltip,         // tooltip
+  Legend           // legenda
 );
