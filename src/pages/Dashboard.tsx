@@ -1,4 +1,3 @@
-// src/pages/Dashboard.tsx
 import React, { useState, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
 import Select, { MultiValue } from 'react-select';
@@ -17,9 +16,9 @@ import './Dashboard.css';
 type Option = { value: string; label: string; };
 
 const tabOptions = [
-  { value: 'overview',   label: 'Visão Geral' },
-  { value: 'porCliente', label: 'Por Cliente' },
-  { value: 'porAnalista',label: 'Por Analista' }
+  { value: 'overview',    label: 'Visão Geral' },
+  { value: 'porCliente',  label: 'Por Cliente' },
+  { value: 'porAnalista', label: 'Por Analista' }
 ];
 
 export default function Dashboard() {
@@ -27,14 +26,14 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const { filters, dispatch } = useFilters();
 
-  // Upload e parse da planilha
+  // 1) upload da planilha
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     const parsed = await parseExcel(e.target.files[0]);
     setData(parsed);
   };
 
-  // Opções de filtro
+  // 2) opções de filtro
   const projetoOptions = useMemo<Option[]>(() => {
     return Array.from(new Set(data.map(d => d.cliente)))
       .map(c => ({ value: c, label: c }));
@@ -50,102 +49,5 @@ export default function Dashboard() {
       .map(a => ({ value: a, label: a }));
   }, [data]);
 
-  // Aplica filtros (agora usando vencimentos)
-  const filtered = useMemo(() => {
-    return data
-      .filter(t => !filters.dateFrom || (t.vencimentos ?? new Date()) >= filters.dateFrom)
-      .filter(t => !filters.dateTo   || (t.vencimentos ?? new Date()) <= filters.dateTo)
-      .filter(t => !filters.projetos.length || filters.projetos.includes(t.cliente))
-      .filter(t => !filters.unidades.length || filters.unidades.includes(t.tribo))
-      .filter(t => !filters.analistas.length || filters.analistas.includes(t.responsavel || ''));
-  }, [data, filters]);
-
-  // KPI de SLA
-  const slaStats = calcSlaStats(filtered);
-
-  return (
-    <div className="dashboard">
-      <header className="dashboard__header">
-        <input type="file" accept=".xlsx" onChange={handleFile} />
-        <div className="dashboard__filters">
-          <DatePicker
-            placeholderText="Data de Vencimentos de..."
-            selected={filters.dateFrom}
-            onChange={d => dispatch({ type: 'SET_DATE_FROM', payload: d || undefined })}
-            isClearable
-          />
-          <DatePicker
-            placeholderText="até..."
-            selected={filters.dateTo}
-            onChange={d => dispatch({ type: 'SET_DATE_TO', payload: d || undefined })}
-            isClearable
-          />
-          <Select<Option, true>
-            placeholder="Projetos (Cliente)"
-            isMulti
-            isClearable
-            options={projetoOptions}
-            value={projetoOptions.filter(o => filters.projetos.includes(o.value))}
-            onChange={(opts: MultiValue<Option>) =>
-              dispatch({ type: 'SET_PROJETOS', payload: opts.map(o => o.value) })
-            }
-          />
-          <Select<Option, true>
-            placeholder="Unidades (Tribo)"
-            isMulti
-            isClearable
-            options={unidadeOptions}
-            value={unidadeOptions.filter(o => filters.unidades.includes(o.value))}
-            onChange={(opts: MultiValue<Option>) =>
-              dispatch({ type: 'SET_UNIDADES', payload: opts.map(o => o.value) })
-            }
-          />
-          <Select<Option, true>
-            placeholder="Analistas"
-            isMulti
-            isClearable
-            options={analistaOptions}
-            value={analistaOptions.filter(o => filters.analistas.includes(o.value))}
-            onChange={(opts: MultiValue<Option>) =>
-              dispatch({ type: 'SET_ANALISTAS', payload: opts.map(o => o.value) })
-            }
-          />
-        </div>
-      </header>
-
-      <section className="dashboard__kpis">
-        <KpiCard title="Total Tickets"   value={filtered.length} />
-        <KpiCard title="SLA Atingido"    value={slaStats.atingidos} />
-        <KpiCard title="SLA Violado"     value={slaStats.violados} />
-        <KpiCard title="% Atingimento"   value={slaStats.pctAtingimento.toFixed(1) + '%'} />
-      </section>
-
-      <nav className="dashboard__tabs">
-        {tabOptions.map(tab => (
-          <button
-            key={tab.value}
-            className={activeTab === tab.value ? 'active' : ''}
-            onClick={() => setActiveTab(tab.value)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
-
-      <section className="dashboard__content">
-        {activeTab === 'overview' && (
-          <div className="dashboard__charts">
-            <ChartDistribPorCliente data={filtered} />
-            <ChartHorasValoresPorCliente data={filtered} />
-          </div>
-        )}
-        {activeTab === 'porCliente' && (
-          <ChartDistribPorCliente data={filtered} />
-        )}
-        {activeTab === 'porAnalista' && (
-          <ChartSlaByAnalyst data={filtered} />
-        )}
-      </section>
-    </div>
-  );
-}
+  // 3) aplicação dos filtros (agora com 'vencimentos' e 'responsavel')
+  const filtered = use
