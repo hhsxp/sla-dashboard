@@ -1,7 +1,7 @@
 // src/pages/Dashboard.tsx
 import React, { useState, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
-import Select from 'react-select';
+import Select, { MultiValue } from 'react-select';
 
 import { parseExcel, Ticket, calcSlaStats } from '../utils/data';
 import { useFilters } from '../contexts/FiltersContext';
@@ -14,6 +14,8 @@ import ChartSlaByAnalyst from '../components/ChartSlaByAnalyst';
 import 'react-datepicker/dist/react-datepicker.css';
 import './Dashboard.css';
 
+type Option = { value: string; label: string; };
+
 const tabOptions = [
   { value: 'overview', label: 'Visão Geral' },
   { value: 'porCliente', label: 'Por Cliente' },
@@ -25,30 +27,30 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const { filters, dispatch } = useFilters();
 
-  // Carrega e parseia a planilha
+  // quando o usuário faz upload do .xlsx
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     const parsed = await parseExcel(e.target.files[0]);
     setData(parsed);
   };
 
-  // Opções para os selects a partir dos dados carregados
-  const projetoOptions = useMemo(() => {
+  // constrói as opções de filtro a partir dos dados
+  const projetoOptions = useMemo<Option[]>(() => {
     return Array.from(new Set(data.map(d => d.cliente)))
       .map(c => ({ value: c, label: c }));
   }, [data]);
 
-  const unidadeOptions = useMemo(() => {
+  const unidadeOptions = useMemo<Option[]>(() => {
     return Array.from(new Set(data.map(d => d.tribo)))
       .map(t => ({ value: t, label: t }));
   }, [data]);
 
-  const analistaOptions = useMemo(() => {
+  const analistaOptions = useMemo<Option[]>(() => {
     return Array.from(new Set(data.map(d => d.responsavel || '')))
       .map(a => ({ value: a, label: a }));
   }, [data]);
 
-  // Aplica filtros
+  // aplica os filtros
   const filtered = useMemo(() => {
     return data
       .filter(t => !filters.dateFrom || (t.criado ?? new Date()) >= filters.dateFrom)
@@ -58,7 +60,7 @@ export default function Dashboard() {
       .filter(t => !filters.analistas.length || filters.analistas.includes(t.responsavel || ''));
   }, [data, filters]);
 
-  // Calcula métricas de SLA
+  // métricas de SLA
   const slaStats = calcSlaStats(filtered);
 
   return (
@@ -70,38 +72,52 @@ export default function Dashboard() {
             placeholderText="Data de..."
             selected={filters.dateFrom}
             onChange={d => dispatch({ type: 'SET_DATE_FROM', payload: d || undefined })}
+            isClearable
           />
           <DatePicker
             placeholderText="até..."
             selected={filters.dateTo}
             onChange={d => dispatch({ type: 'SET_DATE_TO', payload: d || undefined })}
+            isClearable
           />
-          <Select
+          <Select<Option, true>
             placeholder="Projetos"
             isMulti
+            isClearable
             options={projetoOptions}
-            onChange={opts => dispatch({ type: 'SET_PROJETOS', payload: opts.map(o => o.value) })}
+            value={projetoOptions.filter(o => filters.projetos.includes(o.value))}
+            onChange={(opts: MultiValue<Option>) =>
+              dispatch({ type: 'SET_PROJETOS', payload: opts.map(o => o.value) })
+            }
           />
-          <Select
+          <Select<Option, true>
             placeholder="Unidades"
             isMulti
+            isClearable
             options={unidadeOptions}
-            onChange={opts => dispatch({ type: 'SET_UNIDADES', payload: opts.map(o => o.value) })}
+            value={unidadeOptions.filter(o => filters.unidades.includes(o.value))}
+            onChange={(opts: MultiValue<Option>) =>
+              dispatch({ type: 'SET_UNIDADES', payload: opts.map(o => o.value) })
+            }
           />
-          <Select
+          <Select<Option, true>
             placeholder="Analistas"
             isMulti
+            isClearable
             options={analistaOptions}
-            onChange={opts => dispatch({ type: 'SET_ANALISTAS', payload: opts.map(o => o.value) })}
+            value={analistaOptions.filter(o => filters.analistas.includes(o.value))}
+            onChange={(opts: MultiValue<Option>) =>
+              dispatch({ type: 'SET_ANALISTAS', payload: opts.map(o => o.value) })
+            }
           />
         </div>
       </header>
 
       <section className="dashboard__kpis">
-        <KpiCard title="Total Tickets" value={filtered.length} />
-        <KpiCard title="SLA Atingido"  value={slaStats.atingidos} />
-        <KpiCard title="SLA Violado"   value={slaStats.violados} />
-        <KpiCard title="% Atingimento" value={slaStats.pctAtingimento.toFixed(1) + '%'} />
+        <KpiCard title="Total Tickets"  value={filtered.length} />
+        <KpiCard title="SLA Atingido"   value={slaStats.atingidos} />
+        <KpiCard title="SLA Violado"    value={slaStats.violados} />
+        <KpiCard title="% Atingimento"  value={slaStats.pctAtingimento.toFixed(1) + '%'} />
       </section>
 
       <nav className="dashboard__tabs">
